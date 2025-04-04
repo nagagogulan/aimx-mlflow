@@ -22,7 +22,7 @@ async function run() {
     modelFramework: "pytorch",
     modelArchitecture: "distilbert",
     modelWeightUrl:
-      "http://localhost:5500/inference/text-classification/distilbert/weights/model.pkl",
+      "http://localhost:5500/scripts/text-classification/distilbert/pkl/weights/model.pkl",
   };
 
   const handle = await client.workflow.start("runEval", {

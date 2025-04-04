@@ -1,0 +1,7 @@
+torch
+numpy
+mlflow
+matplotlib
+transformers
+scikit-learn
+python-dotenv
