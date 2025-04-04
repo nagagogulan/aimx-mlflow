@@ -1,0 +1,24 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  claire_release_worker:
+    build:
+      context: .
+    environment:
+      NODE_ENV: local
+      TEMPORAL_ADDRESS: host.docker.internal
+      TEMPORAL_PORT: 7233
+      # TEMPORAL_CERT_PATH: certs/client.crt
+      # TEMPORAL_CERT_KEY_PATH: certs/client.key
+      # TEMPORAL_CERT_CA_PATH: certs/ca.crt
+    # volumes:
+    #   - ./database:/usr/src/app/database
+    ports:
+      - 3800:3800
