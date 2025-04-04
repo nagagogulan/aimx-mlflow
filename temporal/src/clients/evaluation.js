@@ -17,12 +17,17 @@ async function run() {
     // namespace: 'foo.bar', // connects to 'default' namespace if not specified
   });
 
+  const uuid = nanoid();
+
   const payload = {
     taskType: "text-classification",
     modelFramework: "pytorch",
     modelArchitecture: "distilbert",
     modelWeightUrl:
-      "http://localhost:5500/scripts/text-classification/distilbert/pkl/weights/model.pkl",
+      "http://localhost:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
+    // modelWeightUrl:
+    //   "http://host.docker.internal:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
+    uuid: uuid,
   };
 
   const handle = await client.workflow.start("runEval", {
@@ -30,7 +35,7 @@ async function run() {
     // type inference works! args: [name: string]
     args: [payload],
     // in practice, use a meaningful business ID, like customerId or transactionId
-    workflowId: "workflow-" + nanoid(),
+    workflowId: "workflow-" + uuid,
   });
   console.log(`Started workflow ${handle.workflowId}`);
 

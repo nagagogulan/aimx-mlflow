@@ -8,7 +8,15 @@
 
 ARG NODE_VERSION=20.11.1
 
-FROM node:${NODE_VERSION}-slim
+#FROM node:${NODE_VERSION}-slim
+
+FROM ubuntu:22.04
+
+# Install Node.js
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Use production node environment by default.
 ENV NODE_ENV production
@@ -23,6 +31,10 @@ COPY package*.json ./
 
 # Copy specific directories to the Docker image
 COPY src/ ./src/
+
+# Copy eval scripts from parent directory
+COPY scripts/ ./scripts/
+
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.npm to speed up subsequent builds.

@@ -5,8 +5,9 @@ const { helloWorld, copyInferenceScripts, buildDockerImage, runEvaluations } =
     startToCloseTimeout: "5 minute",
     retry: {
       initialInterval: "60 second",
-      maximumAttempts: 5,
-      backoffCoefficient: 2,
+      maximumAttempts: 1,
+      // maximumAttempts: 5,
+      // backoffCoefficient: 2,
     },
   });
 

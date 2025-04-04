@@ -15,6 +15,9 @@ services:
       NODE_ENV: local
       TEMPORAL_ADDRESS: host.docker.internal
       TEMPORAL_PORT: 7233
+      EVAL_BASE_DIR: /usr/src/app
+      MLFLOW_URL: http://host.docker.internal:8081
+      WEIGHTS_PATH: /app/weights/model.pkl
       # TEMPORAL_CERT_PATH: certs/client.crt
       # TEMPORAL_CERT_KEY_PATH: certs/client.key
       # TEMPORAL_CERT_CA_PATH: certs/ca.crt
