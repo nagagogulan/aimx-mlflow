@@ -1,5 +1,6 @@
 import { exec } from "child_process";
 import { nanoid } from "nanoid";
+import * as k8s from "@kubernetes/client-node";
 
 export async function helloWorld(options) {
   return "hello world";
@@ -81,6 +82,102 @@ export async function runEvaluations(options) {
   return "Docker container started successfully!";
 }
 
+export async function runEvaluationsInCluster(options) {
+  const kc = new k8s.KubeConfig();
+  kc.loadFromDefault(); // This will load from ~/.kube/config
+  const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+  const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+
+  // generate random string that returns 4 characters (only alphabets)
+  const randomString = generateRandomString(4).toLocaleLowerCase();
+
+  const namespace = options?.namespace || "default";
+  const jobName = `aimx-evaluation-${randomString}`; // Unique job name
+
+  const jobManifest = {
+    apiVersion: "batch/v1",
+    kind: "Job",
+    metadata: {
+      name: jobName,
+    },
+    spec: {
+      template: {
+        metadata: {
+          name: jobName,
+        },
+        spec: {
+          containers: [
+            {
+              name: "aimx-evaluation",
+              image: "aimx-evaluation:latest",
+              imagePullPolicy: "Never", // Use local image
+              env: [
+                {
+                  name: "MODEL_WIGHTS_PATH",
+                  value: process.env.WEIGHTS_PATH,
+                },
+                {
+                  name: "MLFLOW_TRACKING_URI",
+                  value: process.env.MLFLOW_URL,
+                },
+              ],
+            },
+          ],
+          restartPolicy: "Never", // Very important for Jobs
+        },
+      },
+      backoffLimit: 0, // No retries if it fails
+    },
+  };
+
+  await k8sBatchApi.createNamespacedJob({
+    namespace,
+    body: jobManifest,
+  });
+
+  return {
+    jobName: jobName,
+    namespace: namespace,
+  };
+}
+
+export async function waitForJobCompletion(
+  jobName,
+  namespace,
+  timeoutMs = 600000,
+  pollInterval = 5000
+) {
+  const kc = new k8s.KubeConfig();
+  kc.loadFromDefault(); // This will load from ~/.kube/config
+  const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+  const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+  const start = Date.now();
+
+  while (true) {
+    const job = await k8sBatchApi.readNamespacedJob({
+      name: jobName,
+      namespace,
+    });
+
+    if (job.status.succeeded === 1) {
+      console.log(`✅ Job ${jobName} completed successfully.`);
+      return true;
+    }
+
+    if (job.status.failed && job.status.failed > 0) {
+      throw new Error(
+        `❌ Job ${jobName} failed with ${job.status.failed} failures.`
+      );
+    }
+
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`⏰ Timeout waiting for Job ${jobName} to complete.`);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+}
+
 const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
   return new Promise((resolve, reject) => {
     console.log(`🔹 Executing: ${cmd} (in ${cwd})`); // Log command & directory
@@ -95,4 +192,10 @@ const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
       resolve(stdout.trim()); // Trim output for cleaner logs
     });
   });
+};
+
+const generateRandomString = (length = 4) => {
+  return Array.from({ length: length }, () =>
+    String.fromCharCode(97 + Math.floor(Math.random() * 26))
+  ).join("");
 };
