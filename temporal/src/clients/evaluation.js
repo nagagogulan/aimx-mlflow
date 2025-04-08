@@ -19,7 +19,7 @@ async function run() {
 
   const uuid = nanoid();
 
-  const payload = {
+  /*const payload = {
     taskType: "text-classification",
     modelFramework: "pytorch",
     modelArchitecture: "distilbert",
@@ -27,6 +27,20 @@ async function run() {
       "http://localhost:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
     // modelWeightUrl:
     //   "http://host.docker.internal:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
+    uuid: uuid,
+  };*/
+
+  const payload = {
+    dataType: "structured",
+    taskType: "tabular-regression",
+    modelFramework: "scikit-learn",
+    modelArchitecture: "linear-regression",
+    targetColumn: "Weight",
+    experimentName: "fishweight-linear-regression",
+    modelWeightUrl:
+      "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/weights/fish.pkl",
+    modelDatasetUrl:
+      "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/datasets/fish.csv",
     uuid: uuid,
   };
 

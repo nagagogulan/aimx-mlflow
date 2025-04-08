@@ -20,7 +20,7 @@ const {
 export async function runEval(payload) {
   const inferenceData = await copyInferenceScripts(payload);
   const buildData = await buildDockerImage(inferenceData);
-  const evalData = await runEvaluationsInCluster(inferenceData);
+  const evalData = await runEvaluationsInCluster(payload, inferenceData);
   const jobStatus = await waitForJobCompletion(
     evalData.jobName,
     evalData.namespace

@@ -6,7 +6,7 @@ export async function helloWorld(options) {
   return "hello world";
 }
 
-export async function copyInferenceScripts(options) {
+export async function copyInferenceScriptsOld(options) {
   const tempId = nanoid();
   const INFERENCE_BASE_DIR = `${process?.env?.EVAL_BASE_DIR}/scripts/text-classification/distilbert/pkl`;
   const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
@@ -51,6 +51,68 @@ export async function copyInferenceScripts(options) {
   };
 }
 
+export async function copyInferenceScripts(options) {
+  const tempId = nanoid();
+  const INFERENCE_BASE_DIR = `${process?.env?.EVAL_BASE_DIR}/scripts/${options?.dataType}/${options?.taskType}/${options?.modelFramework}/${options?.modelArchitecture}`;
+  const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
+  const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
+  const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
+
+  const TARGET_DIR = `${process?.env?.EVAL_BASE_DIR}/temporal-runs/${tempId}`;
+  const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
+  const MODEL_WEIGHT_URL = options?.modelWeightUrl;
+  const DATASETS_DIR = `${TARGET_DIR}/datasets`;
+  const DATASET_URL = options?.modelDatasetUrl;
+
+  const modelFileName = new URL(MODEL_WEIGHT_URL).pathname.split("/").pop();
+  const datasetFileName = new URL(DATASET_URL).pathname.split("/").pop();
+
+  // Step 1: Create the target directory
+  console.log(`Creating target directory: ${TARGET_DIR}`);
+  await runCommand(`mkdir -p ${TARGET_DIR}`);
+
+  // Step 2: Copy the inference scripts
+  console.log(
+    `Copying inference scripts from ${INFERENCE_SCRIPT_PATH} to ${TARGET_DIR}`
+  );
+  await runCommand(`cp -r ${INFERENCE_SCRIPT_PATH} ${TARGET_DIR}`);
+
+  // Step 3: Copy the Dockerfile
+  console.log(`Copying Dockerfile from ${DOCKER_FILE_DIR} to ${TARGET_DIR}`);
+  await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
+
+  // Step 4: Create the weights directory
+  console.log(`Creating weights directory: ${MODEL_WEIGHT_DIR}`);
+  await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
+
+  // Step 5: Copy the model weights
+  console.log(
+    `Downloading model weights from ${MODEL_WEIGHT_URL} to ${MODEL_WEIGHT_DIR}`
+  );
+  await runCommand(
+    `curl -o ${MODEL_WEIGHT_DIR}/${modelFileName} ${MODEL_WEIGHT_URL}`
+  );
+
+  // Step 6: Create the datasets directory
+  console.log(`Creating datasets directory: ${DATASETS_DIR}`);
+  await runCommand(`mkdir -p ${DATASETS_DIR}`);
+
+  // Step 7: Copy the datasets
+  console.log(`Downloading datasets from ${DATASET_URL} to ${DATASETS_DIR}`);
+  await runCommand(`curl -o ${DATASETS_DIR}/${datasetFileName} ${DATASET_URL}`);
+
+  // Step 8: Copy the requirements file
+  console.log(`Copying requirements file to ${TARGET_DIR}`);
+  await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
+
+  return {
+    tempId: tempId,
+    targetDir: TARGET_DIR,
+    weightsPath: `./weights/${modelFileName}`,
+    datasetPath: `./datasets/${datasetFileName}`,
+  };
+}
+
 export async function buildDockerImage(options) {
   console.log(`Building evaluation container from ${options.targetDir}`);
 
@@ -82,7 +144,7 @@ export async function runEvaluations(options) {
   return "Docker container started successfully!";
 }
 
-export async function runEvaluationsInCluster(options) {
+export async function runEvaluationsInCluster(options, inferenceData) {
   const kc = new k8s.KubeConfig();
   kc.loadFromDefault(); // This will load from ~/.kube/config
   const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
@@ -91,7 +153,7 @@ export async function runEvaluationsInCluster(options) {
   // generate random string that returns 4 characters (only alphabets)
   const randomString = generateRandomString(4).toLocaleLowerCase();
 
-  const namespace = options?.namespace || "default";
+  const namespace = process?.env?.NAMESPACE || "default";
   const jobName = `aimx-evaluation-${randomString}`; // Unique job name
 
   const jobManifest = {
@@ -114,11 +176,23 @@ export async function runEvaluationsInCluster(options) {
               env: [
                 {
                   name: "MODEL_WIGHTS_PATH",
-                  value: process.env.WEIGHTS_PATH,
+                  value: inferenceData.weightsPath,
                 },
                 {
                   name: "MLFLOW_TRACKING_URI",
                   value: process.env.MLFLOW_URL,
+                },
+                {
+                  name: "DATASET_PATH",
+                  value: inferenceData.datasetPath,
+                },
+                {
+                  name: "TARGET_COLUMN",
+                  value: options?.targetColumn || "target",
+                },
+                {
+                  name: "EXPERIMENT_NAME",
+                  value: options?.experimentName || "default_experiment",
                 },
               ],
             },
