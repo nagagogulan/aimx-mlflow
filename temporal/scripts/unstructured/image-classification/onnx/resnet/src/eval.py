@@ -206,7 +206,7 @@ mlflow.set_tracking_uri(mlflowURI)
 mlflow.set_experiment(experiment_name)
 
 # Start an MLflow run
-with mlflow.start_run(run_name="ONNX ResNet Evaluation"):
+with mlflow.start_run():
     # Log model file as an artifact
     mlflow.log_artifact(weight_path, "model")
     
