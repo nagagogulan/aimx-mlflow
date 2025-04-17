@@ -67,25 +67,39 @@ export async function copyInferenceScripts(options) {
   const modelFileName = new URL(MODEL_WEIGHT_URL).pathname.split("/").pop();
   const datasetFileName = new URL(DATASET_URL).pathname.split("/").pop();
 
-  // Step 1: Create the target directory
+  let IMAGE_ZIP_URL, DATA_LABEL_URL;
+  let imageZipFileName, dataLabelFileName;
+  if (
+    options?.dataType === "unstructured" &&
+    options?.taskType === "image-classification" &&
+    options?.modelFramework === "onnx" &&
+    options?.modelArchitecture === "resnet"
+  ) {
+    IMAGE_ZIP_URL = options?.imageZipUrl;
+    DATA_LABEL_URL = options?.dataLabelUrl;
+    imageZipFileName = new URL(IMAGE_ZIP_URL).pathname.split("/").pop();
+    dataLabelFileName = new URL(DATA_LABEL_URL).pathname.split("/").pop();
+  }
+
+  // Create the target directory
   console.log(`Creating target directory: ${TARGET_DIR}`);
   await runCommand(`mkdir -p ${TARGET_DIR}`);
 
-  // Step 2: Copy the inference scripts
+  // Copy the inference scripts
   console.log(
     `Copying inference scripts from ${INFERENCE_SCRIPT_PATH} to ${TARGET_DIR}`
   );
   await runCommand(`cp -r ${INFERENCE_SCRIPT_PATH} ${TARGET_DIR}`);
 
-  // Step 3: Copy the Dockerfile
+  // Copy the Dockerfile
   console.log(`Copying Dockerfile from ${DOCKER_FILE_DIR} to ${TARGET_DIR}`);
   await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
 
-  // Step 4: Create the weights directory
+  // Create the weights directory
   console.log(`Creating weights directory: ${MODEL_WEIGHT_DIR}`);
   await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
 
-  // Step 5: Copy the model weights
+  // Copy the model weights
   console.log(
     `Downloading model weights from ${MODEL_WEIGHT_URL} to ${MODEL_WEIGHT_DIR}`
   );
@@ -93,23 +107,48 @@ export async function copyInferenceScripts(options) {
     `curl -o ${MODEL_WEIGHT_DIR}/${modelFileName} ${MODEL_WEIGHT_URL}`
   );
 
-  // Step 6: Create the datasets directory
+  // Create the datasets directory
   console.log(`Creating datasets directory: ${DATASETS_DIR}`);
   await runCommand(`mkdir -p ${DATASETS_DIR}`);
 
-  // Step 7: Copy the datasets
+  // Copy the datasets
   console.log(`Downloading datasets from ${DATASET_URL} to ${DATASETS_DIR}`);
   await runCommand(`curl -o ${DATASETS_DIR}/${datasetFileName} ${DATASET_URL}`);
 
-  // Step 8: Copy the requirements file
+  // Copy the requirements file
   console.log(`Copying requirements file to ${TARGET_DIR}`);
   await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
+
+  if (
+    options?.dataType === "unstructured" &&
+    options?.taskType === "image-classification" &&
+    options?.modelFramework === "onnx" &&
+    options?.modelArchitecture === "resnet"
+  ) {
+    // Copy the image zip file
+    console.log(
+      `Downloading image zip file from ${IMAGE_ZIP_URL} to ${DATASETS_DIR}`
+    );
+    await runCommand(
+      `curl -o ${DATASETS_DIR}/${imageZipFileName} ${IMAGE_ZIP_URL}`
+    );
+
+    // Copy the data label file
+    console.log(
+      `Downloading data label file from ${DATA_LABEL_URL} to ${DATASETS_DIR}`
+    );
+    await runCommand(
+      `curl -o ${DATASETS_DIR}/${dataLabelFileName} ${DATA_LABEL_URL}`
+    );
+  }
 
   return {
     tempId: tempId,
     targetDir: TARGET_DIR,
     weightsPath: `./weights/${modelFileName}`,
     datasetPath: `./datasets/${datasetFileName}`,
+    imageZipPath: `./datasets/${imageZipFileName}` || null,
+    dataLabelPath: `./datasets/${dataLabelFileName}` || null,
   };
 }
 
@@ -156,6 +195,84 @@ export async function runEvaluationsInCluster(options, inferenceData) {
   const namespace = process?.env?.NAMESPACE || "default";
   const jobName = `aimx-evaluation-${randomString}`; // Unique job name
 
+  let containerData;
+
+  if (
+    options?.dataType === "structured" &&
+    options?.taskType === "tabular-regression" &&
+    options?.modelFramework === "scikit-learn" &&
+    options?.modelArchitecture === "linear-regression"
+  ) {
+    containerData = [
+      {
+        name: "aimx-evaluation",
+        image: "aimx-evaluation:latest",
+        imagePullPolicy: "Never", // Use local image
+        env: [
+          {
+            name: "MODEL_WIGHTS_PATH",
+            value: inferenceData.weightsPath,
+          },
+          {
+            name: "MLFLOW_TRACKING_URI",
+            value: process.env.MLFLOW_URL,
+          },
+          {
+            name: "DATASET_PATH",
+            value: inferenceData.datasetPath,
+          },
+          {
+            name: "TARGET_COLUMN",
+            value: options?.targetColumn || "target",
+          },
+          {
+            name: "EXPERIMENT_NAME",
+            value: options?.experimentName || "default_experiment",
+          },
+        ],
+      },
+    ];
+  } else if (
+    options?.dataType === "unstructured" &&
+    options?.taskType === "image-classification" &&
+    options?.modelFramework === "onnx" &&
+    options?.modelArchitecture === "resnet"
+  ) {
+    containerData = [
+      {
+        name: "aimx-evaluation",
+        image: "aimx-evaluation:latest",
+        imagePullPolicy: "Never", // Use local image
+        env: [
+          {
+            name: "MODEL_WIGHTS_PATH",
+            value: inferenceData.weightsPath,
+          },
+          {
+            name: "MLFLOW_TRACKING_URI",
+            value: process.env.MLFLOW_URL,
+          },
+          {
+            name: "DATASET_PATH",
+            value: inferenceData.datasetPath,
+          },
+          {
+            name: "IMAGES_ZIP_PATH",
+            value: inferenceData.imageZipPath,
+          },
+          {
+            name: "DATA_LABEL_PATH",
+            value: inferenceData.dataLabelPath,
+          },
+          {
+            name: "EXPERIMENT_NAME",
+            value: options?.experimentName || "default_experiment",
+          },
+        ],
+      },
+    ];
+  }
+
   const jobManifest = {
     apiVersion: "batch/v1",
     kind: "Job",
@@ -168,35 +285,7 @@ export async function runEvaluationsInCluster(options, inferenceData) {
           name: jobName,
         },
         spec: {
-          containers: [
-            {
-              name: "aimx-evaluation",
-              image: "aimx-evaluation:latest",
-              imagePullPolicy: "Never", // Use local image
-              env: [
-                {
-                  name: "MODEL_WIGHTS_PATH",
-                  value: inferenceData.weightsPath,
-                },
-                {
-                  name: "MLFLOW_TRACKING_URI",
-                  value: process.env.MLFLOW_URL,
-                },
-                {
-                  name: "DATASET_PATH",
-                  value: inferenceData.datasetPath,
-                },
-                {
-                  name: "TARGET_COLUMN",
-                  value: options?.targetColumn || "target",
-                },
-                {
-                  name: "EXPERIMENT_NAME",
-                  value: options?.experimentName || "default_experiment",
-                },
-              ],
-            },
-          ],
+          containers: containerData,
           restartPolicy: "Never", // Very important for Jobs
         },
       },

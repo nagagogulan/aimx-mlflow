@@ -30,7 +30,7 @@ async function run() {
     uuid: uuid,
   };*/
 
-  const payload = {
+  /*const payload = {
     dataType: "structured",
     taskType: "tabular-regression",
     modelFramework: "scikit-learn",
@@ -41,6 +41,23 @@ async function run() {
       "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/weights/fish.pkl",
     modelDatasetUrl:
       "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/datasets/fish.csv",
+    uuid: uuid,
+  };*/
+
+  const payload = {
+    dataType: "unstructured",
+    taskType: "image-classification",
+    modelFramework: "onnx",
+    modelArchitecture: "resnet",
+    experimentName: "ResNet-Image-Classification-onnx",
+    modelWeightUrl:
+      "http://localhost:5500/temporal/scripts/unstructured/image-classification/onnx/resnet/weights/resnet50-v1-7.onnx",
+    modelDatasetUrl:
+      "http://localhost:5500/temporal/scripts/unstructured/image-classification/onnx/resnet/datasets/data.csv",
+    imageZipUrl:
+      "http://localhost:5500/temporal/scripts/unstructured/image-classification/onnx/resnet/datasets/images.zip",
+    dataLabelUrl:
+      "http://localhost:5500/temporal/scripts/unstructured/image-classification/onnx/resnet/datasets/imagenet_classes.txt",
     uuid: uuid,
   };
 
