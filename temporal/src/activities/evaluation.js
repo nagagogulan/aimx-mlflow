@@ -271,6 +271,41 @@ export async function runEvaluationsInCluster(options, inferenceData) {
         ],
       },
     ];
+  } else if (
+    options?.dataType === "structured" &&
+    options?.taskType === "tabular-classification" &&
+    options?.modelFramework === "xgboost" &&
+    options?.modelArchitecture === "tree-based"
+  ) {
+    containerData = [
+      {
+        name: "aimx-evaluation",
+        image: "aimx-evaluation:latest",
+        imagePullPolicy: "Never", // Use local image
+        env: [
+          {
+            name: "MODEL_WIGHTS_PATH",
+            value: inferenceData.weightsPath,
+          },
+          {
+            name: "MLFLOW_TRACKING_URI",
+            value: process.env.MLFLOW_URL,
+          },
+          {
+            name: "DATASET_PATH",
+            value: inferenceData.datasetPath,
+          },
+          {
+            name: "TARGET_COLUMN",
+            value: options?.targetColumn || "target",
+          },
+          {
+            name: "EXPERIMENT_NAME",
+            value: options?.experimentName || "default_experiment",
+          },
+        ],
+      },
+    ];
   }
 
   const jobManifest = {

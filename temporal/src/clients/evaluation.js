@@ -44,7 +44,7 @@ async function run() {
     uuid: uuid,
   };*/
 
-  const payload = {
+  /*const payload = {
     dataType: "unstructured",
     taskType: "image-classification",
     modelFramework: "onnx",
@@ -58,6 +58,20 @@ async function run() {
       "http://localhost:5500/temporal/scripts/unstructured/image-classification/onnx/resnet/datasets/images.zip",
     dataLabelUrl:
       "http://localhost:5500/temporal/scripts/unstructured/image-classification/onnx/resnet/datasets/imagenet_classes.txt",
+    uuid: uuid,
+  };*/
+
+  const payload = {
+    dataType: "structured",
+    taskType: "tabular-classification",
+    modelFramework: "xgboost",
+    modelArchitecture: "tree-based",
+    targetColumn: "IncidentGrade",
+    experimentName: "Microsoft-Security-Incident-Prediction",
+    modelWeightUrl:
+      "http://localhost:5500/temporal/scripts/structured/tabular-classification/xgboost/tree-based/weights/weight.pkl",
+    modelDatasetUrl:
+      "http://localhost:5500/temporal/scripts/structured/tabular-classification/xgboost/tree-based/datasets/dataset.csv",
     uuid: uuid,
   };
 
