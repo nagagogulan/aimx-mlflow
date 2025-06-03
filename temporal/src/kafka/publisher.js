@@ -2,7 +2,7 @@ import { Kafka } from "kafkajs";
 const { createTopicIfNotExists } = require('./worker.js');
  
 async function sendDocketStatus(uuid, status) {
-  const broker = "54.251.96.179:9092";
+  const broker = process.env?.KAFKA_ADDRESS;
   const topic = "docket-status";
  
   // Create topic if it doesn't exist
