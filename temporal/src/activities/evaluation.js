@@ -1,6 +1,26 @@
 import { exec } from "child_process";
 import { nanoid } from "nanoid";
 import * as k8s from "@kubernetes/client-node";
+import path from "path";
+// import path from 'path';
+import { fileURLToPath } from 'url';
+import { Kafka } from "kafkajs";
+import * as allfunction from "../kafka/worker.js" ;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+console.log("EVALUATION ACTIVITY: ", __dirname);
+console.log("EVALUATION_BASE_DIR:", __filename);
+
+
+// Dynamically resolve path up to '/temporal'
+const projectRoot = __dirname.split('/temporal')[0] + '/temporal';
+ 
+// Now reference your target path relative to project root
+const INFERENCE_BASE_DIR = path.join(projectRoot, 'scripts', 'text-classification', 'distilbert', 'pkl');
+ 
+console.log('PROJECT ROOT:', projectRoot);
+console.log('INFERENCE_BASE_DIR:', INFERENCE_BASE_DIR);
 
 export async function helloWorld(options) {
   return "hello world";
@@ -8,12 +28,19 @@ export async function helloWorld(options) {
 
 export async function copyInferenceScriptsOld(options) {
   const tempId = nanoid();
-  const INFERENCE_BASE_DIR = `${process?.env?.EVAL_BASE_DIR}/scripts/text-classification/distilbert/pkl`;
+  // const INFERENCE_BASE_DIR = `${process?.env?.EVAL_BASE_DIR}/scripts/text-classification/distilbert/pkl`;
+  // console.log("INFERENCE_BASE_DIR: ", path.resolve(__dirname, '../scripts/text-classification/distilbert/pkl'));
+const INFERENCE_BASE_DIR = path.join(projectRoot, 'scripts', 'text-classification', 'distilbert', 'pkl');
+ 
+console.log('PROJECT ROOT:', projectRoot);
+// console.log('INFERENCE_BASE_DIR:', INFERENCE_BASE_DIR);
+  console.log("INFERENCE_BASE_DIR: ", INFERENCE_BASE_DIR);
   const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
   const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
   const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
 
-  const TARGET_DIR = `${process?.env?.EVAL_BASE_DIR}/temporal-runs/${tempId}`;
+  // const TARGET_DIR = `${process?.env?.EVAL_BASE_DIR}/temporal-runs/${tempId}`;
+  const TARGET_DIR = path.join(projectRoot, 'temporal-runs',tempId);
   const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
   const MODEL_WEIGHT_URL = options?.modelWeightUrl;
 
@@ -53,12 +80,12 @@ export async function copyInferenceScriptsOld(options) {
 
 export async function copyInferenceScripts(options) {
   const tempId = nanoid();
-  const INFERENCE_BASE_DIR = `${process?.env?.EVAL_BASE_DIR}/scripts/${options?.dataType}/${options?.taskType}/${options?.modelFramework}/${options?.modelArchitecture}`;
+  const INFERENCE_BASE_DIR = `${projectRoot}/scripts/${options?.dataType}/${options?.taskType}/${options?.modelFramework}/${options?.modelArchitecture}`;
   const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
   const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
   const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
 
-  const TARGET_DIR = `${process?.env?.EVAL_BASE_DIR}/temporal-runs/${tempId}`;
+  const TARGET_DIR = `${projectRoot}/temporal-runs/${tempId}`;
   const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
   const MODEL_WEIGHT_URL = options?.modelWeightUrl;
   const DATASETS_DIR = `${TARGET_DIR}/datasets`;
@@ -397,3 +424,33 @@ const generateRandomString = (length = 4) => {
     String.fromCharCode(97 + Math.floor(Math.random() * 26))
   ).join("");
 };
+
+export async function sendDocketStatus(uuid, status) {
+  const broker = "54.251.96.179:9092";
+  const topic = "docket-status";
+ 
+  // Create topic if it doesn't exist
+  allfunction.createTopicIfNotExists(broker, topic);
+ 
+  const kafka = new Kafka({ brokers: [broker] });
+  const producer = kafka.producer();
+  await producer.connect();
+ 
+  const message = {
+    uuid,
+    status
+  };
+ 
+  await producer.send({
+    topic,
+    messages: [{
+      key: uuid,
+      value: JSON.stringify(message)
+    }]
+  });
+ 
+  console.log("Message sent to topic 'docket-status':", message);
+ 
+  await producer.disconnect();
+  
+}

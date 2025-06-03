@@ -7,6 +7,7 @@ const {
   runEvaluations,
   runEvaluationsInCluster,
   waitForJobCompletion,
+  sendDocketStatus,
 } = proxyActivities({
   startToCloseTimeout: "5 minute",
   retry: {
@@ -25,7 +26,19 @@ export async function runEval(payload) {
     evalData.jobName,
     evalData.namespace
   );
-  // const evalData = await runEvaluations(inferenceData);
+  // const evalData = await runEvaluations(inferenceData);  
+  console.log("evalDat is ", jobStatus);
+  if (jobStatus) {
+    
+  const uuidFromProcessedData = payload.uuid; // Replace with real uuid
+  const status = "success"; // or "failed"
+ 
+await sendDocketStatus(uuidFromProcessedData, status)
+    .catch(err => {
+      console.error("Failed to send Kafka message:", err);
+    });
+  }
+
   return {
     status: "OK",
     inferenceData: inferenceData,

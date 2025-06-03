@@ -19,16 +19,16 @@ async function run() {
 
   const uuid = nanoid();
 
-  /*const payload = {
-    taskType: "text-classification",
-    modelFramework: "pytorch",
-    modelArchitecture: "distilbert",
-    modelWeightUrl:
-      "http://localhost:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
-    // modelWeightUrl:
-    //   "http://host.docker.internal:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
-    uuid: uuid,
-  };*/
+  // /*const payload = {
+  //   taskType: "text-classification",
+  //   modelFramework: "pytorch",
+  //   modelArchitecture: "distilbert",
+  //   modelWeightUrl:
+  //     "http://localhost:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
+  //   // modelWeightUrl:
+  //   //   "http://host.docker.internal:5500/temporal/scripts/text-classification/distilbert/pkl/weights/model.pkl",
+  //   uuid: uuid,
+  // };*/
 
   /*const payload = {
     dataType: "structured",
@@ -61,20 +61,21 @@ async function run() {
     uuid: uuid,
   };*/
 
-  const payload = {
-    dataType: "structured",
-    taskType: "tabular-classification",
-    modelFramework: "xgboost",
-    modelArchitecture: "tree-based",
-    targetColumn: "IncidentGrade",
-    experimentName: "Microsoft-Security-Incident-Prediction",
-    modelWeightUrl:
-      "http://localhost:5500/temporal/scripts/structured/tabular-classification/xgboost/tree-based/weights/weight.pkl",
-    modelDatasetUrl:
-      "http://localhost:5500/temporal/scripts/structured/tabular-classification/xgboost/tree-based/datasets/dataset.csv",
-    uuid: uuid,
-  };
+  // const payload = {
+  //   dataType: "structured",
+  //   taskType: "tabular-classification",
+  //   modelFramework: "xgboost",
+  //   modelArchitecture: "tree-based",
+  //   targetColumn: "IncidentGrade",
+  //   experimentName: "Microsoft-Security-Incident-Prediction",
+  //   modelWeightUrl:
+  //     "http://127.0.0.1:5501/temporal/scripts/structured/tabular-classification/xgboost/tree-based/weights/weight.pkl",
+  //   modelDatasetUrl:
+  //     "http://127.0.0.1:5501/temporal/scripts/structured/tabular--classification/xgboost/tree-based/datasets/dataset.csv",
+  //   uuid: uuid,
+  // };
 
+ 
   const handle = await client.workflow.start("runEval", {
     taskQueue: "evaluation",
     // type inference works! args: [name: string]
