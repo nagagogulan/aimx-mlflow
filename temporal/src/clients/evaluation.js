@@ -3,8 +3,12 @@ import { nanoid } from "nanoid";
 
 async function run() {
   // Connect to the default Server location
+  // const connection = await Connection.connect({
+  //   address: process.env?.TEMPORAL_ADDRESS,
+  // });
+
   const connection = await Connection.connect({
-    address: process.env?.TEMPORAL_ADDRESS,
+    address: "54.251.96.179:7233", // ✅ Replace with your Temporal server's IP
   });
   // In production, pass options to configure TLS and other settings:
   // {
@@ -16,6 +20,7 @@ async function run() {
     connection,
     // namespace: 'foo.bar', // connects to 'default' namespace if not specified
   });
+  console.log("client: ", client);
 
   const uuid = nanoid();
 
@@ -30,19 +35,34 @@ async function run() {
   //   uuid: uuid,
   // };*/
 
-  /*const payload = {
-    dataType: "structured",
-    taskType: "tabular-regression",
-    modelFramework: "scikit-learn",
-    modelArchitecture: "linear-regression",
-    targetColumn: "Weight",
-    experimentName: "fishweight-linear-regression",
-    modelWeightUrl:
-      "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/weights/fish.pkl",
-    modelDatasetUrl:
-      "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/datasets/fish.csv",
-    uuid: uuid,
-  };*/
+  // const payload = {
+  //   dataType: "structured",
+  //   taskType: "tabular-regression",
+  //   modelFramework: "scikit-learn",
+  //   modelArchitecture: "linear-regression",
+  //   targetColumn: "Weight",
+  //   experimentName: "fishweight-linear-regression",
+  //   modelWeightUrl:
+  //     "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/weights/fish.pkl",
+  //   modelDatasetUrl:
+  //     "http://localhost:5500/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/datasets/fish.csv",
+  //   uuid: uuid,
+  // };
+
+
+  // const payload = {
+  //   dataType: "structured",
+  //   taskType: "tabular-regression",
+  //   modelFramework: "scikit-learn",
+  //   modelArchitecture: "linear-regression",
+  //   targetColumn: "Weight",
+  //   experimentName: "heart-linear-regression",
+  //   modelWeightUrl:
+  //     "http://127.0.0.1:5501/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/weights/heart_model.pkl",
+  //   modelDatasetUrl:
+  //     "http://127.0.0.1:5501/temporal/scripts/structured/tabular-regression/scikit-learn/linear-regression/datasets/heart.csv",
+  //   uuid: uuid,
+  // };
 
   /*const payload = {
     dataType: "unstructured",
@@ -76,20 +96,22 @@ async function run() {
   // };
 
  
-  const handle = await client.workflow.start("runEval", {
-    taskQueue: "evaluation",
-    // type inference works! args: [name: string]
-    args: [payload],
-    // in practice, use a meaningful business ID, like customerId or transactionId
-    workflowId: "workflow-" + uuid,
-  });
-  console.log(`Started workflow ${handle.workflowId}`);
+  // const handle = await client.workflow.start("runEval", {
+  //   taskQueue: "evaluation",
+  //   // type inference works! args: [name: string]
+  //   args: [payload],
+  //   // in practice, use a meaningful business ID, like customerId or transactionId
+  //   workflowId: "workflow-" + uuid,
+  // });
+  // console.log(`Started workflow ${handle.workflowId}`);
 
-  // console.log(handle);
+  // console.log('handle', handle);
 
-  // optional: wait for client result
+  // // optional: wait for client result
   // console.log(await handle.result()); // Hello, Temporal!
 }
+
+
 
 run().catch((err) => {
   console.error(err);

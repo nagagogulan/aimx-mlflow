@@ -19,6 +19,7 @@ const {
 });
 
 export async function runEval(payload) {
+  console.log("📦 Received payload from Go backend:", JSON.stringify(payload, null, 2));
   const inferenceData = await copyInferenceScripts(payload);
   const buildData = await buildDockerImage(inferenceData);
   const evalData = await runEvaluationsInCluster(payload, inferenceData);

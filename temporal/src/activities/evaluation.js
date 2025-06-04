@@ -79,6 +79,7 @@ console.log('PROJECT ROOT:', projectRoot);
 }
 
 export async function copyInferenceScripts(options) {
+  console.log("📥 [Activity] Received:", JSON.stringify(options, null, 2));
   const tempId = nanoid();
   const INFERENCE_BASE_DIR = `${projectRoot}/scripts/${options?.dataType}/${options?.taskType}/${options?.modelFramework}/${options?.modelArchitecture}`;
   const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
@@ -89,10 +90,15 @@ export async function copyInferenceScripts(options) {
   const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
   const MODEL_WEIGHT_URL = options?.modelWeightUrl;
   const DATASETS_DIR = `${TARGET_DIR}/datasets`;
-  const DATASET_URL = options?.modelDatasetUrl;
+  const DATASET_URL = options?.modelDatasetUrl[0];
+  console.log("DATASET_URL: ", DATASET_URL);
+  console.log("MODEL_WEIGHT_URL: ", MODEL_WEIGHT_URL);
 
-  const modelFileName = new URL(MODEL_WEIGHT_URL).pathname.split("/").pop();
-  const datasetFileName = new URL(DATASET_URL).pathname.split("/").pop();
+  const modelFileName = MODEL_WEIGHT_URL.path.split("/").pop();
+  const datasetFileName = DATASET_URL.Value.split("/").pop();
+  console.log("modelFileName: ", modelFileName);
+  console.log("datasetFileName: ", datasetFileName);
+
 
   let IMAGE_ZIP_URL, DATA_LABEL_URL;
   let imageZipFileName, dataLabelFileName;
