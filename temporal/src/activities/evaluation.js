@@ -97,6 +97,9 @@ export async function copyInferenceScripts(options) {
   const DATASET_URL = options?.modelDatasetUrl[0];
   console.log("DATASET_URL: ", DATASET_URL);
   // console.log("MODEL_WEIGHT_URL: ", MODEL_WEIGHT_URL);
+  if (!MODEL_WEIGHT_URL?.path || !DATASET_URL?.Value) {
+    throw new Error("Missing modelWeightUrl.path or modelDatasetUrl[0].Value in input options.");
+  }
 
   const modelFileName = MODEL_WEIGHT_URL.path.split("/").pop();
   const datasetFileName = DATASET_URL.Value.split("/").pop();
@@ -141,16 +144,14 @@ export async function copyInferenceScripts(options) {
   await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
 
   // Copy the model weights
-  console.log(
-    `Downloading model weights from ${MODEL_WEIGHT_URL} to ${MODEL_WEIGHT_DIR}`,
-
-
-  );
   console.log(`modelWeightFullPath: ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-    // `curl -o ${MODEL_WEIGHT_DIR}/${modelFileName} ${MODEL_WEIGHT_URL}`
-    await runCommand(
-      `cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`
-    );
+  if (!modelWeightFullPath || !modelFileName) {
+    throw new Error("Invalid model weight path or filename");
+  }
+  // `curl -o ${MODEL_WEIGHT_DIR}/${modelFileName} ${MODEL_WEIGHT_URL}`
+  await runCommand(
+    `cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`
+  );
 
   // Create the datasets directory
   console.log(`Creating datasets directory: ${DATASETS_DIR}`);
@@ -180,7 +181,7 @@ export async function copyInferenceScripts(options) {
     );
     await runCommand(
       // `curl -o ${DATASETS_DIR}/${imageZipFileName} ${IMAGE_ZIP_URL}`
-          `cp ${DATASETS_DIR}/${imageZipFileName} ${IMAGE_ZIP_URL}`
+      `cp ${DATASETS_DIR}/${imageZipFileName} ${IMAGE_ZIP_URL}`
 
     );
 
