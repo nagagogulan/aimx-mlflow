@@ -87,17 +87,25 @@ export async function copyInferenceScripts(options) {
   const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
 
   const TARGET_DIR = `${projectRoot}/temporal-runs/${tempId}`;
+  console.log("TARGET_DIR: ", TARGET_DIR);
   const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
+  console.log("MODEL_WEIGHT_DIR: ", MODEL_WEIGHT_DIR);
   const MODEL_WEIGHT_URL = options?.modelWeightUrl;
+  console.log("MODEL_WEIGHT_URL: ", MODEL_WEIGHT_URL);
   const DATASETS_DIR = `${TARGET_DIR}/datasets`;
+  console.log("DATASETS_DIR: ", DATASETS_DIR);
   const DATASET_URL = options?.modelDatasetUrl[0];
   console.log("DATASET_URL: ", DATASET_URL);
-  console.log("MODEL_WEIGHT_URL: ", MODEL_WEIGHT_URL);
+  // console.log("MODEL_WEIGHT_URL: ", MODEL_WEIGHT_URL);
 
   const modelFileName = MODEL_WEIGHT_URL.path.split("/").pop();
   const datasetFileName = DATASET_URL.Value.split("/").pop();
   console.log("modelFileName: ", modelFileName);
   console.log("datasetFileName: ", datasetFileName);
+  const modelWeightFullPath = `${projectRoot}/shared/${MODEL_WEIGHT_URL.path}`;
+  console.log("modelWeightFullPath: ", modelWeightFullPath);
+  const datasetFullPath = `${projectRoot}/shared/${DATASET_URL.Value}`;
+  console.log("datasetFullPath: ", datasetFullPath);
 
 
   let IMAGE_ZIP_URL, DATA_LABEL_URL;
@@ -134,11 +142,15 @@ export async function copyInferenceScripts(options) {
 
   // Copy the model weights
   console.log(
-    `Downloading model weights from ${MODEL_WEIGHT_URL} to ${MODEL_WEIGHT_DIR}`
+    `Downloading model weights from ${MODEL_WEIGHT_URL} to ${MODEL_WEIGHT_DIR}`,
+
+
   );
-  await runCommand(
-    `curl -o ${MODEL_WEIGHT_DIR}/${modelFileName} ${MODEL_WEIGHT_URL}`
-  );
+  console.log(`modelWeightFullPath: ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+    // `curl -o ${MODEL_WEIGHT_DIR}/${modelFileName} ${MODEL_WEIGHT_URL}`
+    await runCommand(
+      `cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`
+    );
 
   // Create the datasets directory
   console.log(`Creating datasets directory: ${DATASETS_DIR}`);
@@ -146,7 +158,11 @@ export async function copyInferenceScripts(options) {
 
   // Copy the datasets
   console.log(`Downloading datasets from ${DATASET_URL} to ${DATASETS_DIR}`);
-  await runCommand(`curl -o ${DATASETS_DIR}/${datasetFileName} ${DATASET_URL}`);
+  console.log(`datasetFullPath: ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`);
+  // await runCommand(`curl -o ${DATASETS_DIR}/${datasetFileName} ${DATASET_URL}`);\
+  await runCommand(
+    `cp ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`
+  );
 
   // Copy the requirements file
   console.log(`Copying requirements file to ${TARGET_DIR}`);

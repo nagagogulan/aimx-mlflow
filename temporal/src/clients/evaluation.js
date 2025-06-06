@@ -96,19 +96,19 @@ async function run() {
   // };
 
  
-  // const handle = await client.workflow.start("runEval", {
-  //   taskQueue: "evaluation",
-  //   // type inference works! args: [name: string]
-  //   args: [payload],
-  //   // in practice, use a meaningful business ID, like customerId or transactionId
-  //   workflowId: "workflow-" + uuid,
-  // });
-  // console.log(`Started workflow ${handle.workflowId}`);
+  const handle = await client.workflow.start("runEval", {
+    taskQueue: "evaluation",
+    // type inference works! args: [name: string]
+    args: [payload],
+    // in practice, use a meaningful business ID, like customerId or transactionId
+    workflowId: "workflow-" + uuid,
+  });
+  console.log(`Started workflow ${handle.workflowId}`);
 
-  // console.log('handle', handle);
+  console.log('handle', handle);
 
-  // // optional: wait for client result
-  // console.log(await handle.result()); // Hello, Temporal!
+  // optional: wait for client result
+  console.log(await handle.result()); // Hello, Temporal!
 }
 
 

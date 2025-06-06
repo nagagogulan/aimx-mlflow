@@ -7,6 +7,29 @@
 # You can add other services your application may depend on here, such as a
 # database or a cache. For examples, see the Awesome Compose repository:
 # https://github.com/docker/awesome-compose
+# services:
+#   aimx_evaluation_worker:
+#     build:
+#       context: .
+#     environment:
+#       NODE_ENV: local
+#       TEMPORAL_ADDRESS: host.docker.internal
+#       TEMPORAL_PORT: 7233
+#       EVAL_BASE_DIR: /usr/src/app
+#       MLFLOW_URL: http://host.docker.internal:8081
+#       WEIGHTS_PATH: /app/weights/model.pkl
+#       # TEMPORAL_CERT_PATH: certs/client.crt
+#       # TEMPORAL_CERT_KEY_PATH: certs/client.key
+#       # TEMPORAL_CERT_CA_PATH: certs/ca.crt
+#     # volumes:
+#     #   - ./database:/usr/src/app/database
+#     ports:
+#       - 3800:3800
+
+
+
+version: '3.9'
+ 
 services:
   aimx_evaluation_worker:
     build:
@@ -21,7 +44,11 @@ services:
       # TEMPORAL_CERT_PATH: certs/client.crt
       # TEMPORAL_CERT_KEY_PATH: certs/client.key
       # TEMPORAL_CERT_CA_PATH: certs/ca.crt
-    # volumes:
-    #   - ./database:/usr/src/app/database
+    volumes:
+      - shared-data:/app/shared
     ports:
       - 3800:3800
+ 
+volumes:
+  shared-data:
+    external: true
