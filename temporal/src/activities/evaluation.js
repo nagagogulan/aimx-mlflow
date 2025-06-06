@@ -179,7 +179,9 @@ export async function copyInferenceScripts(options) {
       `Downloading image zip file from ${IMAGE_ZIP_URL} to ${DATASETS_DIR}`
     );
     await runCommand(
-      `curl -o ${DATASETS_DIR}/${imageZipFileName} ${IMAGE_ZIP_URL}`
+      // `curl -o ${DATASETS_DIR}/${imageZipFileName} ${IMAGE_ZIP_URL}`
+          `cp ${DATASETS_DIR}/${imageZipFileName} ${IMAGE_ZIP_URL}`
+
     );
 
     // Copy the data label file
@@ -187,7 +189,9 @@ export async function copyInferenceScripts(options) {
       `Downloading data label file from ${DATA_LABEL_URL} to ${DATASETS_DIR}`
     );
     await runCommand(
-      `curl -o ${DATASETS_DIR}/${dataLabelFileName} ${DATA_LABEL_URL}`
+      // `curl -o ${DATASETS_DIR}/${dataLabelFileName} ${DATA_LABEL_URL}`
+      `cp ${DATASETS_DIR}/${dataLabelFileName} ${DATA_LABEL_URL}`
+
     );
   }
 
