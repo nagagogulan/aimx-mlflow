@@ -105,9 +105,9 @@ export async function copyInferenceScripts(options) {
   const datasetFileName = DATASET_URL.Value.split("/").pop();
   console.log("modelFileName: ", modelFileName);
   console.log("datasetFileName: ", datasetFileName);
-  const modelWeightFullPath = `app/shared/${MODEL_WEIGHT_URL.path}`;
+  const modelWeightFullPath = `app/${MODEL_WEIGHT_URL.path}`;
   console.log("modelWeightFullPath: ", modelWeightFullPath);
-  const datasetFullPath = `app/shared/${DATASET_URL.Value}`;
+  const datasetFullPath = `app/${DATASET_URL.Value}`;
   console.log("datasetFullPath: ", datasetFullPath);
 
 
