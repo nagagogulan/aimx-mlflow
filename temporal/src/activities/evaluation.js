@@ -14,7 +14,7 @@ console.log("EVALUATION_BASE_DIR:", __filename);
 
 
 // Dynamically resolve path up to '/temporal'
-const projectRoot = path.join(__dirname, '../../../../..', 'temporal');
+const projectRoot = path.resolve(__dirname, '../../../..'); // ✅ gives /usr/src/app
  
 // Now reference your target path relative to project root
 const INFERENCE_BASE_DIR = path.join(projectRoot, 'scripts', 'text-classification', 'distilbert', 'pkl');
@@ -102,9 +102,9 @@ export async function copyInferenceScripts(options) {
   const datasetFileName = DATASET_URL.Value.split("/").pop();
   console.log("modelFileName: ", modelFileName);
   console.log("datasetFileName: ", datasetFileName);
-  const modelWeightFullPath = `${projectRoot}/app/shared/${MODEL_WEIGHT_URL.path}`;
+  const modelWeightFullPath = `app/shared/${MODEL_WEIGHT_URL.path}`;
   console.log("modelWeightFullPath: ", modelWeightFullPath);
-  const datasetFullPath = `${projectRoot}/app/shared/${DATASET_URL.Value}`;
+  const datasetFullPath = `app/shared/${DATASET_URL.Value}`;
   console.log("datasetFullPath: ", datasetFullPath);
 
 
