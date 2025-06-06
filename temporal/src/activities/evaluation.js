@@ -14,7 +14,7 @@ console.log("EVALUATION_BASE_DIR:", __filename);
 
 
 // Dynamically resolve path up to '/temporal'
-const projectRoot = path.resolve(__dirname, '../../../..'); // ✅ gives /usr/src/app
+const projectRoot = path.resolve(__dirname, '../..'); // ✅ correct
  
 // Now reference your target path relative to project root
 const INFERENCE_BASE_DIR = path.join(projectRoot, 'scripts', 'text-classification', 'distilbert', 'pkl');
