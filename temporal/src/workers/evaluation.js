@@ -16,9 +16,7 @@ async function run() {
     connection,
     namespace: "default",
     taskQueue: "evaluation",
-    // Workflows are registered using a path as they run in a separate JS context.
-    workflowsPath: new URL("../workflows/evaluation.js", import.meta.url)
-      .pathname,
+    workflowsPath: new URL("../workflows/evaluation.js", import.meta.url).pathname,
     activities,
   });
 
@@ -30,10 +28,13 @@ async function run() {
   // By default, worker logs are written via the Runtime logger to STDERR at INFO level.
   //
   // See https://typescript.temporal.io/api/classes/worker.Runtime#install to customize these defaults.
+  
+    console.log("Worker for task queue 'evaluation' has been created and is starting...");
+
   await worker.run();
 }
 
 run().catch((err) => {
-  console.error(err);
+  console.error("Worker encountered an error:", err);
   process.exit(1);
 });
