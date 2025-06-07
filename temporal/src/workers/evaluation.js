@@ -1,3 +1,4 @@
+import path from "path";
 import { NativeConnection, Worker } from "@temporalio/worker";
 import * as activities from "../activities/evaluation.js";
 
