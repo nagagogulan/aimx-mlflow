@@ -11,12 +11,14 @@ async function run() {
     address:"54.251.96.179:7233",
     // TLS and gRPC metadata configuration goes here.
   });
+  const workflowsPath = path.join("/app", "src", "workflows", "evaluation.js");
+
   // Step 2: Register Workflows and Activities with the Worker.
   const worker = await Worker.create({
     connection,
     namespace: "default",
     taskQueue: "evaluation",
-    workflowsPath: new URL("../workflows/evaluation.js", import.meta.url).pathname,
+    workflowsPath: workflowsPath,
     activities,
   });
 
