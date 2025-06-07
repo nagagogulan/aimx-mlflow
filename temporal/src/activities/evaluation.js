@@ -7,12 +7,14 @@ import { fileURLToPath } from 'url';
 import { Kafka } from "kafkajs";
 import * as allfunction from "../kafka/worker.js" ;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-console.log("EVALUATION ACTIVITY: ", __dirname);
-console.log("EVALUATION_BASE_DIR:", __filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+// console.log("EVALUATION ACTIVITY: ", __dirname);
+// console.log("EVALUATION_BASE_DIR:", __filename);
 
-const projectRoot = "/usr/src/app"; // ✅ Container-based
+// const projectRoot = "/usr/src/app"; // ✅ Container-based
+const projectRoot = "/app"; // ✅ Container-based
+
  
 // Now reference your target path relative to project root
 const INFERENCE_BASE_DIR = path.join(projectRoot, 'scripts', 'text-classification', 'distilbert', 'pkl');
