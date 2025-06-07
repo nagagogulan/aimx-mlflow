@@ -19,10 +19,10 @@ RUN apt-get update && apt-get install -y curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Use production node environment by default.
-ENV NODE_ENV production
+# ENV NODE_ENV production
 
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Run the application as a non-root user.
 # USER node
