@@ -44,13 +44,13 @@ services:
       # TEMPORAL_CERT_PATH: certs/client.crt
       # TEMPORAL_CERT_KEY_PATH: certs/client.key
       # TEMPORAL_CERT_CA_PATH: certs/ca.crt
-      KUBECONFIG: /app/.kube/config  # 👈 ensure KUBECONFIG is correct
+      # KUBECONFIG: /app/.kube/config  # 👈 ensure KUBECONFIG is correct
 
     volumes:
       - shared-data:/app/shared
       - /var/run/docker.sock:/var/run/docker.sock
-      - /home/ubuntu/.kube/config:/app/.kube/config  # 👈 mount correct kubeconfig
-      - /home/ubuntu/.minikube:/home/ubuntu/.minikube  # 👈 Exact mount path needed
+      # - /home/ubuntu/.kube/config:/app/.kube/config  # 👈 mount correct kubeconfig
+      # - /home/ubuntu/.minikube:/home/ubuntu/.minikube  # 👈 Exact mount path needed
     ports:
       - 3800:3800
  
