@@ -29,3 +29,10 @@ ENV PIP_CACHE_DIR=/root/.cache/pip
 
 # Command to run the application
 CMD ["python3", "src/eval.py"]
+
+
+
+
+
+
+

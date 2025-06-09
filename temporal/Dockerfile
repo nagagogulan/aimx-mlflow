@@ -54,3 +54,5 @@ EXPOSE 3800
 
 # Run the application.
 CMD ["node", "src/workers/evaluation.js"]
+
+
