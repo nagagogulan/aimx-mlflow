@@ -46,6 +46,8 @@ services:
       # TEMPORAL_CERT_CA_PATH: certs/ca.crt
     volumes:
       - shared-data:/app/shared
+
+      - /var/run/docker.sock:/var/run/docker.sock  # 👈 This is essential
     ports:
       - 3800:3800
  
