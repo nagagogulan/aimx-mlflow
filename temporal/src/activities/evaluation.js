@@ -184,6 +184,14 @@ export async function copyInferenceScripts(options) {
 
     );
   }
+  console.log("final outputt::: to be snet ",
+    tempId,
+    TARGET_DIR,
+    `./weights/${modelFileName}`,
+    `./datasets/${datasetFileName}`,
+    `./datasets/${imageZipFileName}` || null,
+    `./datasets/${dataLabelFileName}` || null
+  )
 
   return {
     tempId: tempId,
