@@ -300,7 +300,7 @@ export async function runEvaluationsInCluster(options, inferenceData) {
     containerData = [
       {
         name: "aimx-evaluation",
-        image: "aimx-evaluation:latest",
+        image: "nagagogulan/aimx-evaluation:latest",
         imagePullPolicy: "Never", // Use local image
         env: [
           {
