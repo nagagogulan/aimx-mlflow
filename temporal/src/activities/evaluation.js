@@ -16,57 +16,57 @@ export async function helloWorld(options) {
   return "hello world";
 }
 
-export async function copyInferenceScriptsOld(options) {
-  const tempId = nanoid();
-  // const INFERENCE_BASE_DIR = `${process?.env?.EVAL_BASE_DIR}/scripts/text-classification/distilbert/pkl`;
-  // console.log("INFERENCE_BASE_DIR: ", path.resolve(__dirname, '../scripts/text-classification/distilbert/pkl'));
-const INFERENCE_BASE_DIR = path.join(projectRoot, 'scripts', 'text-classification', 'distilbert', 'pkl');
+// export async function copyInferenceScriptsOld(options) {
+//   const tempId = nanoid();
+//   // const INFERENCE_BASE_DIR = `${process?.env?.EVAL_BASE_DIR}/scripts/text-classification/distilbert/pkl`;
+//   // console.log("INFERENCE_BASE_DIR: ", path.resolve(__dirname, '../scripts/text-classification/distilbert/pkl'));
+// const INFERENCE_BASE_DIR = path.join(projectRoot, 'scripts', 'text-classification', 'distilbert', 'pkl');
  
-console.log('PROJECT ROOT:', projectRoot);
-// console.log('INFERENCE_BASE_DIR:', INFERENCE_BASE_DIR);
-  console.log("INFERENCE_BASE_DIR: ", INFERENCE_BASE_DIR);
-  const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
-  const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
-  const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
+// console.log('PROJECT ROOT:', projectRoot);
+// // console.log('INFERENCE_BASE_DIR:', INFERENCE_BASE_DIR);
+//   console.log("INFERENCE_BASE_DIR: ", INFERENCE_BASE_DIR);
+//   const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
+//   const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
+//   const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
 
-  // const TARGET_DIR = `${process?.env?.EVAL_BASE_DIR}/temporal-runs/${tempId}`;
-  const TARGET_DIR = path.join(projectRoot, 'temporal-runs',tempId);
-  const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
-  const MODEL_WEIGHT_URL = options?.modelWeightUrl;
+//   // const TARGET_DIR = `${process?.env?.EVAL_BASE_DIR}/temporal-runs/${tempId}`;
+//   const TARGET_DIR = path.join(projectRoot, 'temporal-runs',tempId);
+//   const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
+//   const MODEL_WEIGHT_URL = options?.modelWeightUrl;
 
-  // Step 1: Create the target directory
-  console.log(`Creating target directory: ${TARGET_DIR}`);
-  await runCommand(`mkdir -p ${TARGET_DIR}`);
+//   // Step 1: Create the target directory
+//   console.log(`Creating target directory: ${TARGET_DIR}`);
+//   await runCommand(`mkdir -p ${TARGET_DIR}`);
 
-  // Step 2: Copy the inference scripts
-  console.log(
-    `Copying inference scripts from ${INFERENCE_SCRIPT_PATH} to ${TARGET_DIR}`
-  );
-  await runCommand(`cp -r ${INFERENCE_SCRIPT_PATH} ${TARGET_DIR}`);
+//   // Step 2: Copy the inference scripts
+//   console.log(
+//     `Copying inference scripts from ${INFERENCE_SCRIPT_PATH} to ${TARGET_DIR}`
+//   );
+//   await runCommand(`cp -r ${INFERENCE_SCRIPT_PATH} ${TARGET_DIR}`);
 
-  // Step 3: Copy the Dockerfile
-  console.log(`Copying Dockerfile from ${DOCKER_FILE_DIR} to ${TARGET_DIR}`);
-  await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
+//   // Step 3: Copy the Dockerfile
+//   console.log(`Copying Dockerfile from ${DOCKER_FILE_DIR} to ${TARGET_DIR}`);
+//   await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
 
-  // Step 4: Create the weights directory
-  console.log(`Creating weights directory: ${MODEL_WEIGHT_DIR}`);
-  await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
+//   // Step 4: Create the weights directory
+//   console.log(`Creating weights directory: ${MODEL_WEIGHT_DIR}`);
+//   await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
 
-  // Step 5: Copy the model weights
-  console.log(
-    `Downloading model weights from ${MODEL_WEIGHT_URL} to ${MODEL_WEIGHT_DIR}`
-  );
-  await runCommand(`curl -o ${MODEL_WEIGHT_DIR}/model.pkl ${MODEL_WEIGHT_URL}`);
+//   // Step 5: Copy the model weights
+//   console.log(
+//     `Downloading model weights from ${MODEL_WEIGHT_URL} to ${MODEL_WEIGHT_DIR}`
+//   );
+//   await runCommand(`curl -o ${MODEL_WEIGHT_DIR}/model.pkl ${MODEL_WEIGHT_URL}`);
 
-  // Step 6: Copy the requirements file
-  console.log(`Copying requirements file to ${TARGET_DIR}`);
-  await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
+//   // Step 6: Copy the requirements file
+//   console.log(`Copying requirements file to ${TARGET_DIR}`);
+//   await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
 
-  return {
-    tempId: tempId,
-    targetDir: TARGET_DIR,
-  };
-}
+//   return {
+//     tempId: tempId,
+//     targetDir: TARGET_DIR,
+//   };
+// }
 
 export async function copyInferenceScripts(options) {
   console.log("📥 [Activity] Received:", JSON.stringify(options, null, 2));
