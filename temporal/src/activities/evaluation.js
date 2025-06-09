@@ -6,6 +6,8 @@ import path from "path";
 import { fileURLToPath } from 'url';
 import { Kafka } from "kafkajs";
 import * as allfunction from "../kafka/worker.js" ;
+import fs from 'fs';
+import yaml from 'js-yaml';
 
 const projectRoot = "/app"; // ✅ Container-based 
 console.log('PROJECT ROOT:', projectRoot);
@@ -236,8 +238,9 @@ export async function runEvaluations(options) {
 
 export async function runEvaluationsInCluster(options, inferenceData) {
   const kc = new k8s.KubeConfig();
-  kc.loadFromDefault(); // This will load from ~/.kube/config
-  // kc.loadFromFile('/app/.kube/config'); //for server
+  // kc.loadFromDefault(); // This will load from ~/.kube/config
+  kc.loadFromFile(loadPatchedMinikubeConfig());
+  
 
   const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
   const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
@@ -479,4 +482,31 @@ export async function sendDocketStatus(uuid, status) {
  
   await producer.disconnect();
   
+}
+
+
+function loadPatchedMinikubeConfig() {
+  const originalPath = '/app/.kube/config';
+  const raw = fs.readFileSync(originalPath, 'utf8');
+  const config = yaml.load(raw);
+
+  const patch = (p) => p?.replace('/home/ubuntu/.minikube', '/app/.minikube');
+
+  config.clusters?.forEach(c => {
+    if (c.cluster['certificate-authority']) {
+      c.cluster['certificate-authority'] = patch(c.cluster['certificate-authority']);
+    }
+  });
+  config.users?.forEach(u => {
+    if (u.user['client-certificate']) {
+      u.user['client-certificate'] = patch(u.user['client-certificate']);
+    }
+    if (u.user['client-key']) {
+      u.user['client-key'] = patch(u.user['client-key']);
+    }
+  });
+
+  const tmpPath = '/tmp/kubeconfig-patched.yaml';
+  fs.writeFileSync(tmpPath, yaml.dump(config));
+  return tmpPath;
 }
