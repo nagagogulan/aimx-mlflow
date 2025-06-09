@@ -50,8 +50,7 @@ services:
       - shared-data:/app/shared
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/ubuntu/.kube/config:/app/.kube/config  # 👈 mount correct kubeconfig
-      - /home/ubuntu/.minikube:/app/.minikube  # 👈 also mount cert/key paths
-    ports:
+      - /home/ubuntu/.minikube:/home/ubuntu/.minikube  # 👈 Exact mount path needed
       - 3800:3800
  
 volumes:
