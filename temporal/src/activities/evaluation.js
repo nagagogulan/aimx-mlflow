@@ -214,6 +214,9 @@ export async function buildDockerImage(options) {
   // Step 2: Build the Docker image
   await runCommand("docker build -t aimx-evaluation .", options.targetDir);
 
+  await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", options.targetDir);
+  await runCommand("docker push nagagogulan/aimx-evaluation:latest", options.targetDir);
+
   return "Docker image built successfully!";
 }
 
@@ -262,7 +265,7 @@ export async function runEvaluationsInCluster(options, inferenceData) {
     containerData = [
       {
         name: "aimx-evaluation",
-        image: "aimx-evaluation:latest",
+        image: "nagagogulan/aimx-evaluation:latest",
         imagePullPolicy: "Never", // Use local image
         env: [
           {
@@ -336,7 +339,7 @@ export async function runEvaluationsInCluster(options, inferenceData) {
     containerData = [
       {
         name: "aimx-evaluation",
-        image: "aimx-evaluation:latest",
+        image: "nagagogulan/aimx-evaluation:latest",
         imagePullPolicy: "Never", // Use local image
         env: [
           {

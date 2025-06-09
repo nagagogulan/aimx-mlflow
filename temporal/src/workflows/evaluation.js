@@ -9,7 +9,7 @@ const {
   waitForJobCompletion,
   sendDocketStatus,
 } = proxyActivities({
-  startToCloseTimeout: "5 minute",
+  startToCloseTimeout: "10 minute",
   retry: {
     initialInterval: "60 second",
     maximumAttempts: 1,
