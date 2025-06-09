@@ -41,6 +41,10 @@ COPY scripts/ ./scripts/
 # Leverage a bind mounts to package.json and package-lock.json to avoid having to copy them into
 # into this layer.
 
+RUN apt-get update && \
+    apt-get install -y docker.io && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 RUN  npm install --omit=dev
 
 # RUN mkdir /usr/src/app/node_modules/.cache && chmod -R 777 /usr/src/app/node_modules/.cache

@@ -236,7 +236,9 @@ export async function runEvaluations(options) {
 
 export async function runEvaluationsInCluster(options, inferenceData) {
   const kc = new k8s.KubeConfig();
-  kc.loadFromDefault(); // This will load from ~/.kube/config
+  // kc.loadFromDefault(); // This will load from ~/.kube/config
+  kc.loadFromFile('/app/.kube/config'); //for server
+
   const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
   const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
 
