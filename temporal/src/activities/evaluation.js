@@ -402,7 +402,8 @@ export async function waitForJobCompletion(
   pollInterval = 5000
 ) {
   const kc = new k8s.KubeConfig();
-  kc.loadFromDefault(); // This will load from ~/.kube/config
+  // kc.loadFromDefault(); // This will load from ~/.kube/config
+    kc.loadFromFile(loadPatchedMinikubeConfig()); // ✅ Use patched kubeconfig
   const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
   const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
   const start = Date.now();
