@@ -13,46 +13,68 @@ const {
   retry: {
     initialInterval: "60 second",
     maximumAttempts: 1,
-    // maximumAttempts: 5,
-    // backoffCoefficient: 2,
   },
 });
 
+// Utility logger
+const logStep = (msg, obj = null) => {
+  console.log(`🟢 [runEval] ${msg}`);
+  if (obj) console.log(JSON.stringify(obj, null, 2));
+};
+
+const logError = (step, err) => {
+  console.error(`❌ [runEval] ${step} failed:\n  ↳ ${err.message}`);
+};
+
+// Step runner with context
+const runStep = async (stepName, fn) => {
+  try {
+    logStep(`Step: ${stepName}...`);
+    const result = await fn();
+    logStep(`✅ Step "${stepName}" completed successfully`);
+    return result;
+  } catch (err) {
+    logError(stepName, err);
+    throw new Error(`Step "${stepName}" failed: ${err.message}`);
+  }
+};
+
 export async function runEval(payload) {
-  console.log("📦 Step 1: Received payload from Go backend:");
-  console.log(JSON.stringify(payload, null, 2));
+  logStep("Step 1: Received payload", payload);
 
-  console.log("📁 Step 2: Copying inference scripts...");
-  const inferenceData = await copyInferenceScripts(payload);
-  console.log("✅ Inference scripts copied:", inferenceData);
+  let inferenceData, buildData, evalData, jobStatus;
 
-  console.log("🐳 Step 3: Building Docker image...");
-  const buildData = await buildDockerImage(inferenceData);
-  console.log("✅ Docker image built:", buildData);
-
-  console.log("🚀 Step 4: Running evaluations in cluster...");
-  const evalData = await runEvaluationsInCluster(payload, inferenceData);
-  console.log("✅ Evaluations launched:", evalData);
-
-  console.log("⏳ Step 5: Waiting for job completion...");
-  const jobStatus = await waitForJobCompletion(
-    evalData.jobName,
-    evalData.namespace
+  inferenceData = await runStep("Copying inference scripts", () =>
+    copyInferenceScripts(payload)
   );
-  console.log("✅ Job completed with status:", jobStatus);
+
+  buildData = await runStep("Building Docker image", () =>
+    buildDockerImage(inferenceData)
+  );
+
+  evalData = await runStep("Launching evaluations in cluster", () =>
+    runEvaluationsInCluster(payload, inferenceData)
+  );
+
+  jobStatus = await runStep("Waiting for job completion", () =>
+    waitForJobCompletion(evalData.jobName, evalData.namespace)
+  );
 
   if (jobStatus) {
-    console.log("📬 Step 6: Sending docket status...");
-    const uuidFromProcessedData = payload.uuid; // Replace with real uuid
-    const status = "success"; // or "failed"
+    const uuid = payload.uuid || "unknown-uuid";
+    const status = "success";
 
-    await sendDocketStatus(uuidFromProcessedData, status).catch((err) => {
-      console.error("❌ Failed to send Kafka message:", err);
-    });
-    console.log("✅ Docket status sent");
+    try {
+      logStep("Sending docket status...");
+      await sendDocketStatus(uuid, status);
+      logStep("✅ Docket status sent");
+    } catch (err) {
+      logError("Sending docket status", err);
+      // Do not rethrow — this failure won't affect workflow result
+    }
   }
 
-  console.log("🏁 Workflow completed successfully");
+  logStep("🏁 Workflow completed successfully");
 
   return {
     status: "OK",
