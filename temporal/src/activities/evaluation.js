@@ -339,6 +339,9 @@ export async function buildDockerImage(options) {
 
     // Step 3: Tag and push the image
     await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", dir);
+
+    await exec(`echo ${process?.env?.DOCKER_HUB_PASSWORD} | docker login -u ${process?.env?.DOCKER_HUB_USERNAME} --password-stdin`);
+
     await runCommand("docker push nagagogulan/aimx-evaluation:latest", dir);
     console.log(`✅ Docker image pushed to nagagogulan/aimx-evaluation:latest`);
 
