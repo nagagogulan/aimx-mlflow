@@ -827,9 +827,9 @@ function loadPatchedMinikubeConfig() {
 
 export async function dockerLogin() {
 
-  const username = process.env.DOCKER_USERNAME;
+  const username = process.env.DOCKER_HUB_USERNAME;
 
-  const password = process.env.DOCKER_PASSWORD;
+  const password = process.env.DOCKER_HUB_PASSWORD;
 
   if (!username || !password) {
 
