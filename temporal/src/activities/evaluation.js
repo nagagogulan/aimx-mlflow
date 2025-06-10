@@ -329,6 +329,12 @@ export async function buildDockerImage(options) {
 
   try {
     console.log(`🔨 [buildDockerImage] Starting build in directory: ${dir}`);
+
+        if (!username || !password) {
+      throw new Error("Docker Hub credentials are missing in environment variables.");
+    }
+    await runCommand(`echo ${password} | docker login -u ${username} --password-stdin`, dir);
+    
     // Step 1: Remove any existing container
     await runCommand("docker rm -f aimx-evaluation || true", dir);
 
@@ -338,8 +344,6 @@ export async function buildDockerImage(options) {
 
     // Step 3: Tag and push the image
     await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", dir);
-
-    await exec(`echo ${process?.env?.DOCKER_HUB_PASSWORD} | docker login -u ${process?.env?.DOCKER_HUB_USERNAME} --password-stdin`);
 
     await runCommand("docker push nagagogulan/aimx-evaluation:latest", dir);
     console.log(`✅ Docker image pushed to nagagogulan/aimx-evaluation:latest`);
