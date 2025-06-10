@@ -8,6 +8,9 @@ import { Kafka } from "kafkajs";
 import * as allfunction from "../kafka/worker.js" ;
 import fs from 'fs';
 import yaml from 'js-yaml';
+import util from "util";
+ 
+const execPromise = util.promisify(exec);
 
 const projectRoot = "/app"; // ✅ Container-based 
 console.log('PROJECT ROOT:', projectRoot);
@@ -330,6 +333,8 @@ export async function buildDockerImage(options) {
   try {
     console.log(`🔨 [buildDockerImage] Starting build in directory: ${dir}`);
 
+    await dockerLogin();
+
     // Step 1: Remove any existing container
     await runCommand("docker rm -f aimx-evaluation || true", dir);
 
@@ -340,7 +345,7 @@ export async function buildDockerImage(options) {
     // Step 3: Tag and push the image
     await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", dir);
 
-    await exec(`echo ${process?.env?.DOCKER_HUB_PASSWORD} | docker login -u ${process?.env?.DOCKER_HUB_USERNAME} --password-stdin`);
+    // await exec(`echo ${process?.env?.DOCKER_HUB_PASSWORD} | docker login -u ${process?.env?.DOCKER_HUB_USERNAME} --password-stdin`);
 
     await runCommand("docker push nagagogulan/aimx-evaluation:latest", dir);
     console.log(`✅ Docker image pushed to nagagogulan/aimx-evaluation:latest`);
@@ -818,3 +823,46 @@ function loadPatchedMinikubeConfig() {
   fs.writeFileSync(tmpPath, yaml.dump(config));
   return tmpPath;
 }
+
+
+export async function dockerLogin() {
+
+  const username = process.env.DOCKER_USERNAME;
+
+  const password = process.env.DOCKER_PASSWORD;
+
+  if (!username || !password) {
+
+    throw new Error("Missing Docker credentials in env vars.");
+
+  }
+
+  try {
+
+    // Avoid shell escaping issues
+
+    const loginCmd = `echo "${password}" | docker login -u "${username}" --password-stdin`;
+
+    console.log("🔐 Logging into Docker Hub...");
+
+    const { stdout, stderr } = await execPromise(loginCmd);
+
+    if (stderr && stderr.toLowerCase().includes("error")) {
+
+      throw new Error(`Docker login failed: ${stderr}`);
+
+    }
+
+    console.log("✅ Docker login succeeded.");
+
+  } catch (err) {
+
+    console.error("❌ Docker login error:", err.message);
+
+    throw err;
+
+  }
+
+}
+
+ 
