@@ -330,11 +330,14 @@ export async function buildDockerImage(options) {
   try {
     console.log(`🔨 [buildDockerImage] Starting build in directory: ${dir}`);
 
-        if (!username || !password) {
+   const username = process?.env?.DOCKER_HUB_USERNAME;
+    const password = process?.env?.DOCKER_HUB_PASSWORD;
+
+    if (!username || !password) {
       throw new Error("Docker Hub credentials are missing in environment variables.");
     }
     await runCommand(`echo ${password} | docker login -u ${username} --password-stdin`, dir);
-    
+
     // Step 1: Remove any existing container
     await runCommand("docker rm -f aimx-evaluation || true", dir);
 
