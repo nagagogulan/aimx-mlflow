@@ -804,19 +804,34 @@ function loadPatchedMinikubeConfig() {
   const raw = fs.readFileSync(originalPath, 'utf8');
   const config = yaml.load(raw);
 
-  const patch = (p) => p?.replace('/home/ubuntu/.minikube', '/app/.minikube');
-
+  const patchPath = (p) => p?.replace('/home/ubuntu/.minikube', '/app/.minikube'); 
   config.clusters?.forEach(c => {
     if (c.cluster['certificate-authority']) {
-      c.cluster['certificate-authority'] = patch(c.cluster['certificate-authority']);
+      c.cluster['certificate-authority'] = patchPath(c.cluster['certificate-authority']);
     }
+ 
+    // ✅ Patch the Kubernetes API server address
+
+    if (c.cluster['server']) {
+
+      c.cluster['server'] = c.cluster['server'].replace(
+
+        'https://192.168.49.2',
+
+        'https://host.docker.internal'
+
+      );
+
+    }
+
   });
+ 
   config.users?.forEach(u => {
     if (u.user['client-certificate']) {
-      u.user['client-certificate'] = patch(u.user['client-certificate']);
+      u.user['client-certificate'] = patchPath(u.user['client-certificate']);
     }
     if (u.user['client-key']) {
-      u.user['client-key'] = patch(u.user['client-key']);
+      u.user['client-key'] = patchPath(u.user['client-key']);
     }
   });
 

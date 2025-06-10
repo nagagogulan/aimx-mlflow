@@ -55,7 +55,8 @@ services:
       - /home/ubuntu/.minikube:/app/.minikube:ro
     ports:
       - 3800:3800
- 
+extra_hosts:
+  - "host.docker.internal:host-gateway" 
 volumes:
   shared-data:
     external: true
