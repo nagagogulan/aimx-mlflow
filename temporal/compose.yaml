@@ -29,7 +29,7 @@
 
 
 version: '3.9'
- 
+env_file: .env
 services:
   aimx_evaluation_worker:
     build:
