@@ -29,11 +29,11 @@
 
 
 version: '3.9'
-env_file: .env
 services:
   aimx_evaluation_worker:
     build:
       context: .
+    env_file: .env
     environment:
       NODE_ENV: local
       TEMPORAL_ADDRESS: host.docker.internal
@@ -41,6 +41,8 @@ services:
       EVAL_BASE_DIR: /usr/src/app
       MLFLOW_URL: http://host.docker.internal:8081
       WEIGHTS_PATH: /app/weights/model.pkl
+      DOCKER_HUB_USERNAME: nagagogulan
+      DOCKER_HUB_PASSWORD: Gokul28@@
       # TEMPORAL_CERT_PATH: certs/client.crt
       # TEMPORAL_CERT_KEY_PATH: certs/client.key
       # TEMPORAL_CERT_CA_PATH: certs/ca.crt

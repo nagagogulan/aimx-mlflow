@@ -8,9 +8,7 @@ import { Kafka } from "kafkajs";
 import * as allfunction from "../kafka/worker.js" ;
 import fs from 'fs';
 import yaml from 'js-yaml';
-import dotenv from 'dotenv';
 
-dotenv.config(); 
 const projectRoot = "/app"; // ✅ Container-based 
 console.log('PROJECT ROOT:', projectRoot);
 
