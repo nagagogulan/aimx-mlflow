@@ -33,17 +33,18 @@ services:
   aimx_evaluation_worker:
     build:
       context: .
-    env_file: .env
     network_mode: "host"
     environment:
       NODE_ENV: local
-      TEMPORAL_ADDRESS: host.docker.internal
+      TEMPORAL_ADDRESS: 54.251.96.179:7233
       TEMPORAL_PORT: 7233
       EVAL_BASE_DIR: /usr/src/app
-      MLFLOW_URL: http://host.docker.internal:8081
-      WEIGHTS_PATH: /app/weights/model.pkl
+      MLFLOW_URL: http://54.251.96.179:5000/
       DOCKER_HUB_USERNAME: nagagogulan
       DOCKER_HUB_PASSWORD: Gokul28@@
+      KAFKA_ADDRESS: 54.251.96.179:9092
+      NAMESPACE: default
+
       # TEMPORAL_CERT_PATH: certs/client.crt
       # TEMPORAL_CERT_KEY_PATH: certs/client.key
       # TEMPORAL_CERT_CA_PATH: certs/ca.crt

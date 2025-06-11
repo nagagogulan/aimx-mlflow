@@ -664,43 +664,69 @@ function getContainerEnvConfig(options, inferenceData) {
 export async function waitForJobCompletion(
   jobName,
   namespace,
-  timeoutMs = 600000,
-  pollInterval = 5000
+  timeoutMs = 6000000, // 10 minutes
+  pollInterval = 50000  // 5 seconds
 ) {
-  console.log(`⏳ [waitForJobCompletion] Waiting for job '${jobName}' in namespace '${namespace}'`);
+  console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
 
   const kc = new k8s.KubeConfig();
+  const start = Date.now();
+
   try {
     kc.loadFromFile(loadPatchedMinikubeConfig());
     const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
-    const start = Date.now();
 
     while (true) {
-      const jobResp = await k8sBatchApi.readNamespacedJob({ name: jobName, namespace });
-      const jobStatus = jobResp.body.status;
+      try {
+        const jobResp = await k8sBatchApi.readNamespacedJob({ name: jobName, namespace });
+        const jobStatus = jobResp.body?.status;
 
-      if (jobStatus?.succeeded === 1) {
-        console.log(`✅ [waitForJobCompletion] Job '${jobName}' completed successfully.`);
-        return true;
-      }
+        console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
 
-      if (jobStatus?.failed > 0) {
-        console.error(`❌ [waitForJobCompletion] Job '${jobName}' failed with ${jobStatus.failed} attempts.`);
-        throw new Error(`Job '${jobName}' failed.`);
+        if (jobStatus?.succeeded === 1) {
+          console.log(`✅ [Success] Job '${jobName}' completed successfully.`);
+          return true;
+        }
+
+        if (jobStatus?.failed && jobStatus.failed > 0) {
+          console.error(`❌ [Failure] Job '${jobName}' failed with ${jobStatus.failed} attempt(s).`);
+          throw new Error(`Job '${jobName}' failed with ${jobStatus.failed} failures.`);
+        }
+
+      } catch (apiErr) {
+        const statusCode = apiErr?.response?.statusCode;
+        const rawBody = apiErr?.response?.body;
+
+        if (statusCode === 404) {
+          console.warn(`⚠️ [NotFound] Job '${jobName}' not found. It may not be created yet or was deleted.`);
+        } else {
+          console.error(`❌ [API Error] Failed to fetch job status. Code=${statusCode}`);
+          if (rawBody) {
+            try {
+              const parsed = JSON.parse(rawBody);
+              console.error(`📄 [ErrorBody]: ${JSON.stringify(parsed, null, 2)}`);
+            } catch {
+              console.error(`📄 [RawBody]: ${rawBody}`);
+            }
+          }
+          throw apiErr;
+        }
       }
 
       if (Date.now() - start > timeoutMs) {
-        console.error(`⏰ [waitForJobCompletion] Timeout reached while waiting for job '${jobName}'.`);
-        throw new Error(`Timeout while waiting for job '${jobName}'`);
+        console.error(`⏰ [Timeout] Gave up waiting after ${timeoutMs / 1000} seconds.`);
+        throw new Error(`Timeout while waiting for job '${jobName}' to complete.`);
       }
 
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
+
   } catch (error) {
-    console.error(`❌ [waitForJobCompletion] Error while polling job status: ${error.message}`);
+    console.error(`❌ [Fatal] waitForJobCompletion crashed: ${error.message}`);
     throw error;
   }
 }
+
 
 // const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
 //   return new Promise((resolve, reject) => {
