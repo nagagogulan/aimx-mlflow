@@ -597,11 +597,12 @@ function getContainerEnvConfig(options, inferenceData) {
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
     { name: "DATASET_PATH", value: inferenceData.datasetPath },
     { name: "EXPERIMENT_NAME", value: options.experimentName || "default_experiment" },
+    { name: "TARGET_COLUMN", value: "target"}
   ];
 
-  if (options.targetColumn) {
-    baseEnv.push({ name: "TARGET_COLUMN", value: options.targetColumn || "target"});
-  }
+  // if (options.targetColumn) {
+  //   baseEnv.push({ name: "TARGET_COLUMN", value: "target"});
+  // }
 
   if (
     options.dataType === "unstructured" &&
