@@ -600,7 +600,7 @@ function getContainerEnvConfig(options, inferenceData) {
   ];
 
   if (options.targetColumn) {
-    baseEnv.push({ name: "TARGET_COLUMN", value: options.targetColumn });
+    baseEnv.push({ name: "TARGET_COLUMN", value: options.targetColumn || "target"});
   }
 
   if (
