@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { Kafka } from "kafkajs";
 import * as allfunction from "../kafka/worker.js" ;
 import fs from 'fs';
+import https from 'https';
 import yaml from 'js-yaml';
 
 const projectRoot = "/app"; // ✅ Container-based 
@@ -545,9 +546,22 @@ export async function runEvaluationsInCluster(options, inferenceData) {
     console.log(`🧠 [runEvaluationsInCluster] Creating job ${jobName} in namespace '${namespace}'`);
 
     const kc = new k8s.KubeConfig();
-    kc.loadFromFile(loadPatchedMinikubeConfig());
+    const kubePath = loadPatchedMinikubeConfig();
+    kc.loadFromFile(kubePath);
+
+    const cluster = kc.getCurrentCluster();
+    const user = kc.getCurrentUser();
+
+    const httpsAgent = new https.Agent({
+      ca: fs.readFileSync(cluster?.caFile),
+      cert: fs.readFileSync(user?.certFile),
+      key: fs.readFileSync(user?.keyFile),
+      rejectUnauthorized: true,
+    });
 
     const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+    k8sBatchApi.basePath = cluster?.server;
+    k8sBatchApi.requestOptions = { agent: httpsAgent };
 
     const containerData = getContainerEnvConfig(options, inferenceData);
 
@@ -812,21 +826,16 @@ function loadPatchedMinikubeConfig() {
  
     // ✅ Patch the Kubernetes API server address
 
-    if (c.cluster['server']) {
-
-      c.cluster['server'] = c.cluster['server'].replace(
-
-        'https://192.168.49.2',
-
-        'https://host.docker.internal'
-
-      );
-
-    }
-
+  //   if (c.cluster['server']) {
+  //     c.cluster['server'] = c.cluster['server'].replace(
+  //       'https://192.168.49.2',
+  //       'https://host.docker.internal'
+  //     );
+  //   }
   });
  
   config.users?.forEach(u => {
+
     if (u.user['client-certificate']) {
       u.user['client-certificate'] = patchPath(u.user['client-certificate']);
     }
