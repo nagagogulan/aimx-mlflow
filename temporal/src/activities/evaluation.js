@@ -816,9 +816,9 @@ function loadPatchedMinikubeConfig() {
 
       c.cluster['server'] = c.cluster['server'].replace(
 
-        'http://192.168.49.2',
+        'https://192.168.49.2',
 
-        'http://host.docker.internal'
+        'https://host.docker.internal'
 
       );
 
