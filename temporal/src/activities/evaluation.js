@@ -602,7 +602,7 @@ function getContainerEnvConfig(options, inferenceData) {
   return [{
     name: "aimx-evaluation",
     image: "nagagogulan/aimx-evaluation:latest",
-    imagePullPolicy: "Never",
+    imagePullPolicy: "Always",
     env: baseEnv
   }];
 }
