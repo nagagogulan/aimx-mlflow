@@ -592,6 +592,7 @@ export async function runEvaluationsInCluster(options, inferenceData) {
 }
 
 function getContainerEnvConfig(options, inferenceData) {
+  console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
     { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
