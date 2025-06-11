@@ -34,6 +34,7 @@ services:
     build:
       context: .
     env_file: .env
+    network_mode: "host"
     environment:
       NODE_ENV: local
       TEMPORAL_ADDRESS: host.docker.internal
