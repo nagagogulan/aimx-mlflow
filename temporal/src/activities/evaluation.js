@@ -616,7 +616,7 @@ function getContainerEnvConfig(options, inferenceData) {
   return [{
     name: "aimx-evaluation",
     image: "nagagogulan/aimx-evaluation:latest",
-    imagePullPolicy: "Always",
+    imagePullPolicy: "IfNotPresent",
     env: baseEnv
   }];
 }
