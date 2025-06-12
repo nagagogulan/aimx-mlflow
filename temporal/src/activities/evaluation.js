@@ -669,11 +669,99 @@ function getContainerEnvConfig(options, inferenceData) {
 //   }
 // }
 
+// export async function waitForJobCompletion(
+//   jobName,
+//   namespace,
+//   timeoutMs = 6000000, // 10 minutes
+//   pollInterval = 50000  // 5 seconds
+// ) {
+//   console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
+
+//   const kc = new k8s.KubeConfig();
+//   const start = Date.now();
+
+//   try {
+//     kc.loadFromFile(loadPatchedMinikubeConfig());
+//     const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+
+//     while (true) {
+//       try {
+//         const jobResp = await k8sBatchApi.readNamespacedJob({ name: jobName, namespace });
+//         const jobStatus = jobResp.body?.status;
+
+//         console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
+
+//         if (jobStatus?.succeeded === 1) {
+//           console.log(`✅ [Success] Job '${jobName}' completed successfully.`);
+//           return true;
+//         }
+
+//         if (jobStatus?.failed && jobStatus.failed > 0) {
+//           console.error(`❌ [Failure] Job '${jobName}' failed with ${jobStatus.failed} attempt(s).`);
+//           throw new Error(`Job '${jobName}' failed with ${jobStatus.failed} failures.`);
+//         }
+
+//       } catch (apiErr) {
+//         const statusCode = apiErr?.response?.statusCode;
+//         const rawBody = apiErr?.response?.body;
+
+//         if (statusCode === 404) {
+//           console.warn(`⚠️ [NotFound] Job '${jobName}' not found. It may not be created yet or was deleted.`);
+//         } else {
+//           console.error(`❌ [API Error] Failed to fetch job status. Code=${statusCode}`);
+//           if (rawBody) {
+//             try {
+//               const parsed = JSON.parse(rawBody);
+//               console.error(`📄 [ErrorBody]: ${JSON.stringify(parsed, null, 2)}`);
+//             } catch {
+//               console.error(`📄 [RawBody]: ${rawBody}`);
+//             }
+//           }
+//           throw apiErr;
+//         }
+//       }
+
+//       if (Date.now() - start > timeoutMs) {
+//         console.error(`⏰ [Timeout] Gave up waiting after ${timeoutMs / 1000} seconds.`);
+//         throw new Error(`Timeout while waiting for job '${jobName}' to complete.`);
+//       }
+
+//       await new Promise((resolve) => setTimeout(resolve, pollInterval));
+//     }
+
+//   } catch (error) {
+//     console.error(`❌ [Fatal] waitForJobCompletion crashed: ${error.message}`);
+//     throw error;
+//   }
+// }
+
+
+// const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
+//   return new Promise((resolve, reject) => {
+//     console.log(`🔹 Executing: ${cmd} (in ${cwd})`); // Log command & directory
+//     exec(cmd, { cwd: cwd }, (error, stdout, stderr) => {
+//       if (error) {
+//         console.error(`❌ Command failed: ${cmd}\nError: ${error.message}`);
+//         console.error(`Stderr:\n${stderr}`);
+//         reject(new Error(stderr || error.message));
+//         return;
+//       }
+//       console.log(`✅ Command succeeded:\n${stdout}`);
+//       resolve(stdout.trim()); // Trim output for cleaner logs
+//     });
+//   });
+// };
+
+
+import * as k8s from "@kubernetes/client-node";
+import fs from "fs";
+import https from "https";
+
 export async function waitForJobCompletion(
   jobName,
   namespace,
-  timeoutMs = 6000000, // 10 minutes
-  pollInterval = 50000  // 5 seconds
+  timeoutMs = 600000, // 10 minutes
+  pollInterval = 5000 // 5 seconds
 ) {
   console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
 
@@ -682,17 +770,38 @@ export async function waitForJobCompletion(
 
   try {
     kc.loadFromFile(loadPatchedMinikubeConfig());
+
     const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+    const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
 
     while (true) {
       try {
-        const jobResp = await k8sBatchApi.readNamespacedJob({ name: jobName, namespace });
+        const jobResp = await k8sBatchApi.readNamespacedJob(jobName, namespace);
         const jobStatus = jobResp.body?.status;
 
         console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
 
         if (jobStatus?.succeeded === 1) {
-          console.log(`✅ [Success] Job '${jobName}' completed successfully.`);
+          console.log(`✅ [Success] Job '${jobName}' completed.`);
+
+          // Fetch pod logs after success
+          const podList = await k8sCoreApi.listNamespacedPod(
+            namespace,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            `job-name=${jobName}`
+          );
+
+          const podName = podList.body.items[0]?.metadata?.name;
+          if (podName) {
+            const logResp = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
+            console.log(`📄 [Pod Logs for ${podName}]:\n${logResp.body}`);
+          } else {
+            console.warn("⚠️ No pod found to fetch logs from.");
+          }
+
           return true;
         }
 
@@ -734,23 +843,6 @@ export async function waitForJobCompletion(
     throw error;
   }
 }
-
-
-// const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
-//   return new Promise((resolve, reject) => {
-//     console.log(`🔹 Executing: ${cmd} (in ${cwd})`); // Log command & directory
-//     exec(cmd, { cwd: cwd }, (error, stdout, stderr) => {
-//       if (error) {
-//         console.error(`❌ Command failed: ${cmd}\nError: ${error.message}`);
-//         console.error(`Stderr:\n${stderr}`);
-//         reject(new Error(stderr || error.message));
-//         return;
-//       }
-//       console.log(`✅ Command succeeded:\n${stdout}`);
-//       resolve(stdout.trim()); // Trim output for cleaner logs
-//     });
-//   });
-// };
 
 const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
   return new Promise((resolve, reject) => {
