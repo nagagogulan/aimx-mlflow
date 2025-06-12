@@ -337,8 +337,6 @@ export async function buildDockerImage(options) {
     if (!username || !password) {
       throw new Error("Docker Hub credentials are missing in environment variables.");
     }
-    await runCommand(`echo ${password} | docker login -u ${username} --password-stdin`, dir);
-
     // Step 1: Remove any existing container
     await runCommand("docker rm -f aimx-evaluation || true", dir);
 
@@ -348,6 +346,8 @@ export async function buildDockerImage(options) {
 
     // Step 3: Tag and push the image
     await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", dir);
+
+    await runCommand(`echo ${password} | docker login -u ${username} --password-stdin`, dir);
 
     await runCommand("docker push nagagogulan/aimx-evaluation:latest", dir);
     console.log(`✅ Docker image pushed to nagagogulan/aimx-evaluation:latest`);
@@ -594,11 +594,9 @@ export async function runEvaluationsInCluster(options, inferenceData) {
 function getContainerEnvConfig(options, inferenceData) {
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
-    // { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
+    { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
-    // { name: "DATASET_PATH", value: inferenceData.datasetPath },
-    { name: "DATASET_PATH", value: "/app/datasets/dataset.csv" },
-    { name: "MODEL_WIGHTS_PATH", value: "/app/weights/your_model.pkl" },
+    { name: "DATASET_PATH", value: inferenceData.datasetPath },
     { name: "EXPERIMENT_NAME", value: options.experimentName || "Microsoft-Security-Incident-Prediction" },
     { name: "TARGET_COLUMN", value: "IncidentGrade"}
   ];
@@ -623,7 +621,6 @@ function getContainerEnvConfig(options, inferenceData) {
     imagePullPolicy: "IfNotPresent",
     env: baseEnv,
     workingDir: "/app"
-
   }];
 }
 
