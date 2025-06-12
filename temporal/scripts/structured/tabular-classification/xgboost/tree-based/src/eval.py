@@ -10,11 +10,14 @@ import traceback
 
 # Load variables from .env file
 load_dotenv()
+WORKDIR = "/app"
+
+
 
 print("========== Environment Setup ==========")
 mlflowURI = os.getenv("MLFLOW_TRACKING_URI")
-weight_path = os.getenv("MODEL_WIGHTS_PATH")
-dataset_path = os.getenv("DATASET_PATH")
+weight_path = os.path.join(WORKDIR, os.getenv("MODEL_WIGHTS_PATH", ""))
+dataset_path = os.path.join(WORKDIR, os.getenv("DATASET_PATH", ""))
 target_column = os.getenv("TARGET_COLUMN")
 experiment_name = os.getenv("EXPERIMENT_NAME")
 
