@@ -597,8 +597,8 @@ function getContainerEnvConfig(options, inferenceData) {
     { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
     { name: "DATASET_PATH", value: inferenceData.datasetPath },
-    { name: "EXPERIMENT_NAME", value: options.experimentName || "default_experiment" },
-    { name: "TARGET_COLUMN", value: "target"}
+    { name: "EXPERIMENT_NAME", value: options.experimentName || "Microsoft-Security-Incident-Prediction" },
+    { name: "TARGET_COLUMN", value: "IncidentGrade"}
   ];
 
   // if (options.targetColumn) {
