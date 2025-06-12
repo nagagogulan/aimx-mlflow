@@ -12,8 +12,6 @@ from sklearn.metrics import brier_score_loss
 # Load variables from .env file
 load_dotenv()
 
-
-
 mlflowURI = os.getenv("MLFLOW_TRACKING_URI")
 print(f"  MLFLOW_TRACKING_URI: {mlflowURI}")
 
@@ -28,14 +26,14 @@ print(f"  TARGET_COLUMN      : {target_column}")
 
 experiment_name = os.getenv("EXPERIMENT_NAME")
 print(f"  EXPERIMENT_NAME    : {experiment_name}")
-print(f"  scikit-learn version: {sklearn.__version__}",flus=True)
+print(f"  scikit-learn version: {sklearn.__version__}", flush=True)
 
 print("\n========== Directory Diagnostics ==========", flush=True)
 cwd = os.getcwd()
 print(f"  Current Working Directory: {cwd}", flush=True)
 
 try:
-        print("  Files & folders in working directory:", flush=True)
+    print("  Files & folders in working directory:", flush=True)
     for f in os.listdir(cwd):
         full_path = os.path.join(cwd, f)
         print(f"   └── {full_path}", flush=True)
