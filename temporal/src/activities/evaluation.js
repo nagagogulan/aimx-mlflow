@@ -338,26 +338,9 @@ export async function buildDockerImage(options) {
       throw new Error("Docker Hub credentials are missing in environment variables.");
     }
 
-    
-    const dockerPsAllOutputBefor = await runCommand("docker ps -a", dir);
-    const dockerPsOutputBefore = await runCommand("docker ps", dir);
-    const dockerImagesBefore = await runCommand("docker images", dir);
-
-    console.log("📦 [buildDockerImage] Docker containers list: before\n", dockerPsAllOutputBefor);
-    console.log("📦 [buildDockerImage] Docker containers list: before\n", dockerPsOutputBefore);
-    console.log("📦 [buildDockerImage] Docker containers list: before\n", dockerImagesBefore);
-
     // Step 1: Remove any existing container
-    await runCommand("docker rm -f aimx-evaluation || true", dir);
-
-    const dockerPsAllOutput = await runCommand("docker ps -a", dir);
-    const dockerPsOutput = await runCommand("docker ps", dir);
-    const dockerImages = await runCommand("docker images", dir);
-
-    console.log("📦 [buildDockerImage] Docker containers list: After\n", dockerPsAllOutput);
-    console.log("📦 [buildDockerImage] Docker containers list: After\n", dockerPsOutput);
-    console.log("📦 [buildDockerImage] Docker containers list: After\n", dockerPsOutput);
-
+    await runCommand("docker rmi -f aimx-evaluation || true", dir);
+    await runCommand("docker rmi -f nagagogulan/aimx-evaluation:latest || true", dir);
 
     // Step 2: Build the Docker image
     await runCommand("docker build -t aimx-evaluation .", dir);

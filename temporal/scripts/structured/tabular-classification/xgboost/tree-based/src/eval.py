@@ -1,10 +1,10 @@
 import os
-import sys
-import sklearn
 import traceback
 import pandas as pd
 import joblib
 import mlflow
+import subprocess
+import docker
 from dotenv import load_dotenv
 from sklearn.metrics import roc_auc_score, roc_curve, log_loss, cohen_kappa_score
 from sklearn.metrics import brier_score_loss
@@ -12,65 +12,43 @@ from sklearn.metrics import brier_score_loss
 # Load variables from .env file
 load_dotenv()
 
-mlflowURI = os.getenv("MLFLOW_TRACKING_URI")
-print(f"  MLFLOW_TRACKING_URI: {mlflowURI}")
 
-weight_path = os.path.abspath(os.getenv("MODEL_WIGHTS_PATH"))
-print(f"  MODEL_WIGHTS_PATH  : {weight_path}")
-
-dataset_path = os.path.abspath(os.getenv("DATASET_PATH"))
-print(f"  DATASET_PATH       : {dataset_path}")
-
-target_column = os.getenv("TARGET_COLUMN")
-print(f"  TARGET_COLUMN      : {target_column}")
-
-experiment_name = os.getenv("EXPERIMENT_NAME")
-print(f"  EXPERIMENT_NAME    : {experiment_name}")
-print(f"  scikit-learn version: {sklearn.__version__}", flush=True)
-
-print("\n========== Directory Diagnostics ==========", flush=True)
-cwd = os.getcwd()
-print(f"  Current Working Directory: {cwd}", flush=True)
-
+# Step 0: Connect to Minikube Docker daemon
 try:
-    print("  Files & folders in working directory:", flush=True)
-    for f in os.listdir(cwd):
-        full_path = os.path.join(cwd, f)
-        print(f"   └── {full_path}", flush=True)
+    print("🔌 Connecting to Minikube Docker daemon...", flush=True)
+    docker_env = subprocess.check_output("minikube docker-env --shell bash", shell=True).decode()
+    for line in docker_env.splitlines():
+        if line.startswith("export "):
+            key, val = line.replace("export ", "").split("=", 1)
+            os.environ[key] = val.strip('"')
 
-    # Show weights and datasets dir content with full paths
-    weights_dir = os.path.abspath(os.path.dirname(weight_path))
-    dataset_dir = os.path.abspath(os.path.dirname(dataset_path))
+    client = docker.from_env()
+    print("✅ Connected to Minikube Docker daemon", flush=True)
 
-    if os.path.isdir(weights_dir):
-        print(f"\n  Contents of weights dir ({weights_dir}):", flush=True)
-        for f in os.listdir(weights_dir):
-            print(f"   └── {os.path.join(weights_dir, f)}", flush=True)
+    # Step 1: Check for container
+    containers = client.containers.list(all=True, filters={"ancestor": "aimx-evaluation:latest"})
+    for container in containers:
+        print(f"🛑 Stopping and removing container: {container.name}", flush=True)
+        container.stop()
+        container.remove(force=True)
 
-    if os.path.isdir(dataset_dir):
-        print(f"\n  Contents of datasets dir ({dataset_dir}):", flush=True)
-        for f in os.listdir(dataset_dir):
-            print(f"   └── {os.path.join(dataset_dir, f)}", flush=True)
+    # Step 2: Check and remove image
+    images = client.images.list(name="aimx-evaluation:latest")
+    for image in images:
+        print(f"🧼 Removing image: {image.short_id}", flush=True)
+        client.images.remove(image.id, force=True)
+
+    print("🚮 Docker cleanup complete (container + image)", flush=True)
 
 except Exception as e:
-    print(f"⚠️ Error reading directory contents: {e}", flush=True)
+    print(f"⚠️ Failed to connect or clean Docker resources: {e}", flush=True)
     traceback.print_exc()
 
-
-print("\n========== Data Loading ==========", flush=True)
-print(f"📦 Attempting to load dataset from: {dataset_path}", flush=True)
-
-# ✅ Add this block here — before read_csv
-if not os.path.exists(dataset_path):
-    print(f"❌ Dataset file not found at path: {dataset_path}", flush=True)
-    print("🔍 Parent directory listing:", flush=True)
-    parent_dir = os.path.dirname(dataset_path)
-    print(f"   📁 Parent Directory: {parent_dir}", flush=True)
-    if os.path.isdir(parent_dir):
-        for f in os.listdir(parent_dir):
-            print(f"   └── {f}", flush=True)
-    else:
-        print("   ⚠️ Parent directory does not exist!", flush=True)
+mlflowURI = os.getenv("MLFLOW_TRACKING_URI")
+weight_path = os.path.abspath(os.getenv("MODEL_WIGHTS_PATH"))
+dataset_path = os.path.abspath(os.getenv("DATASET_PATH"))
+target_column = os.getenv("TARGET_COLUMN")
+experiment_name = os.getenv("EXPERIMENT_NAME")
 
 # Now proceed to load CSV inside try-except
 try:
@@ -80,12 +58,6 @@ except Exception as e:
     print(f"❌ Failed to load dataset from: {dataset_path}", flush=True)
     traceback.print_exc()
     raise
-
-
-
-
-# Step 1: Load the dataset
-# df = pd.read_csv(dataset_path)
 
 # Step 2: Separate features and target
 X = df.drop(columns=[target_column])
