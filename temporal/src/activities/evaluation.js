@@ -344,6 +344,10 @@ export async function buildDockerImage(options) {
     await runCommand("docker build -t aimx-evaluation .", dir);
     console.log(`✅ Docker image built in ${dir}`);
 
+     // Step 3: Log current containers
+    console.log("📦 [buildDockerImage] Listing current Docker containers...");
+    await runCommand("docker ps -a", dir); // <- LOG docker container list here
+    
     // Step 3: Tag and push the image
     await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", dir);
 
