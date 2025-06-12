@@ -594,9 +594,11 @@ export async function runEvaluationsInCluster(options, inferenceData) {
 function getContainerEnvConfig(options, inferenceData) {
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
-    { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
+    // { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
-    { name: "DATASET_PATH", value: inferenceData.datasetPath },
+    // { name: "DATASET_PATH", value: inferenceData.datasetPath },
+    { name: "DATASET_PATH", value: "/app/datasets/dataset.csv" },
+    { name: "MODEL_WIGHTS_PATH", value: "/app/weights/your_model.pkl" },
     { name: "EXPERIMENT_NAME", value: options.experimentName || "Microsoft-Security-Incident-Prediction" },
     { name: "TARGET_COLUMN", value: "IncidentGrade"}
   ];

@@ -62,6 +62,19 @@ except Exception as e:
 print("\n========== Data Loading ==========", flush=True)
 print(f"📦 Attempting to load dataset from: {dataset_path}", flush=True)
 
+# ✅ Add this block here — before read_csv
+if not os.path.exists(dataset_path):
+    print(f"❌ Dataset file not found at path: {dataset_path}", flush=True)
+    print("🔍 Parent directory listing:", flush=True)
+    parent_dir = os.path.dirname(dataset_path)
+    print(f"   📁 Parent Directory: {parent_dir}", flush=True)
+    if os.path.isdir(parent_dir):
+        for f in os.listdir(parent_dir):
+            print(f"   └── {f}", flush=True)
+    else:
+        print("   ⚠️ Parent directory does not exist!", flush=True)
+
+# Now proceed to load CSV inside try-except
 try:
     df = pd.read_csv(dataset_path)
     print(f"✅ Loaded dataset with shape: {df.shape}", flush=True)
@@ -72,8 +85,9 @@ except Exception as e:
 
 
 
+
 # Step 1: Load the dataset
-df = pd.read_csv(dataset_path)
+# df = pd.read_csv(dataset_path)
 
 # Step 2: Separate features and target
 X = df.drop(columns=[target_column])
