@@ -1,53 +1,59 @@
 import os
+import sklearn
+import traceback
 import pandas as pd
 import joblib
 import mlflow
 from dotenv import load_dotenv
 from sklearn.metrics import roc_auc_score, roc_curve, log_loss, cohen_kappa_score
 from sklearn.metrics import brier_score_loss
-import sklearn
-import traceback
 
 # Load variables from .env file
 load_dotenv()
 
-print("========== Environment Setup ==========")
 mlflowURI = os.getenv("MLFLOW_TRACKING_URI")
-weight_path = os.getenv("MODEL_WIGHTS_PATH")
-dataset_path = os.getenv("DATASET_PATH")
-target_column = os.getenv("TARGET_COLUMN")
-experiment_name = os.getenv("EXPERIMENT_NAME")
+print(f"  MLFLOW_TRACKING_URI: {mlflowURI}")
 
-print(f"  MLFLOW_TRACKING_URI : {mlflowURI}")
-print(f"  MODEL_WIGHTS_PATH   : {weight_path}")
-print(f"  DATASET_PATH        : {dataset_path}")
-print(f"  TARGET_COLUMN       : {target_column}")
-print(f"  EXPERIMENT_NAME     : {experiment_name}")
+weight_path = os.getenv("MODEL_WIGHTS_PATH")
+print(f"  MODEL_WIGHTS_PATH  : {weight_path}")
+
+dataset_path = os.getenv("DATASET_PATH")
+print(f"  DATASET_PATH       : {dataset_path}")
+
+target_column = os.getenv("TARGET_COLUMN")
+print(f"  TARGET_COLUMN      : {target_column}")
+
+experiment_name = os.getenv("EXPERIMENT_NAME")
+print(f"  EXPERIMENT_NAME    : {experiment_name}")
 print(f"  scikit-learn version: {sklearn.__version__}")
 
-# Log current working directory and contents
-print("\n========== Directory Diagnostics ==========")
+rint("\n========== Directory Diagnostics ==========")
 cwd = os.getcwd()
 print(f"  Current Working Directory: {cwd}")
 
 try:
     print("  Files & folders in working directory:")
     for f in os.listdir(cwd):
-        print(f"   └── {f}")
-    # Optionally show weights and datasets dir content
-    weights_dir = os.path.dirname(weight_path)
-    dataset_dir = os.path.dirname(dataset_path)
+        full_path = os.path.join(cwd, f)
+        print(f"   └── {full_path}")
+
+    # Show weights and datasets dir content with full paths
+    weights_dir = os.path.abspath(os.path.dirname(weight_path))
+    dataset_dir = os.path.abspath(os.path.dirname(dataset_path))
 
     if os.path.isdir(weights_dir):
         print(f"\n  Contents of weights dir ({weights_dir}):")
         for f in os.listdir(weights_dir):
-            print(f"   └── {f}")
+            print(f"   └── {os.path.join(weights_dir, f)}")
+
     if os.path.isdir(dataset_dir):
         print(f"\n  Contents of datasets dir ({dataset_dir}):")
         for f in os.listdir(dataset_dir):
-            print(f"   └── {f}")
+            print(f"   └── {os.path.join(dataset_dir, f)}")
+
 except Exception as e:
     print(f"⚠️ Error reading directory contents: {e}")
+    traceback.print_exc()
 
 print("\n========== Data Loading ==========")
 try:
@@ -58,186 +64,160 @@ except Exception as e:
     traceback.print_exc()
     raise
 
+
+
+# Step 1: Load the dataset
+df = pd.read_csv(dataset_path)
+
 # Step 2: Separate features and target
 X = df.drop(columns=[target_column])
 y = df[target_column]
 
+# Step 3: Preprocess if needed
 # Convert object-type features to category
 for col in X.select_dtypes(include='object').columns:
     X[col] = X[col].astype('category')
 
-# Step 4: Load model
-print("\n========== Model Loading ==========")
-try:
-    model = joblib.load(weight_path)
-    print(f"✅ Model loaded successfully from: {weight_path}")
-except Exception as e:
-    print(f"❌ Failed to load model from {weight_path}")
-    traceback.print_exc()
-    raise
+# Step 4: Load your trained model
+model = joblib.load(weight_path)  # Update if filename differs
 
 # Step 5: Predict
-print("\n========== Model Prediction ==========")
 predictions = model.predict(X)
-print(f"✅ Model prediction complete. Total records: {len(predictions)}")
 
-# Get prediction probabilities
+# Get prediction probabilities for ROC-AUC calculation
+# Check if the model has predict_proba method
 try:
+    # For multi-class classification
     if hasattr(model, 'predict_proba'):
         y_prob = model.predict_proba(X)
+    # For models that only have decision_function (like SVM)
     elif hasattr(model, 'decision_function'):
         y_prob = model.decision_function(X)
     else:
         y_prob = None
-except Exception as e:
-    print("⚠️ Failed to compute prediction probabilities")
-    traceback.print_exc()
+except:
     y_prob = None
 
-# Step 6: Compare predictions
+# Step 6: Compare with actuals
 results = pd.DataFrame({
     "Actual": y,
     "Predicted": predictions
 })
-print(results.head())
-
-# Step 7: Metrics calculation
-print("\n========== Metric Calculation ==========")
-
-
-
 
 print(results)
 
 # Step 7: Calculate Evaluation Metrics
 # Count correct predictions (TP + TN)
-# correct_predictions = (results["Actual"] == results["Predicted"]).sum()
-# # Total number of predictions (TP + TN + FP + FN)
-# total_predictions = len(results)
-# # Calculate accuracy using the formula (TP + TN) / (TP + TN + FP + FN)
-# accuracy = correct_predictions / total_predictions
+correct_predictions = (results["Actual"] == results["Predicted"]).sum()
+# Total number of predictions (TP + TN + FP + FN)
+total_predictions = len(results)
+# Calculate accuracy using the formula (TP + TN) / (TP + TN + FP + FN)
+accuracy = correct_predictions / total_predictions
 
-# # Define the positive class
-# positive_class = "TruePositive"
+# Define the positive class
+positive_class = "TruePositive"
 
-# # True Positives: predicted positive and actually positive
-# true_positives = ((results["Predicted"] == positive_class) & 
-#                  (results["Actual"] == positive_class)).sum()
+# True Positives: predicted positive and actually positive
+true_positives = ((results["Predicted"] == positive_class) & 
+                 (results["Actual"] == positive_class)).sum()
 
-# # False Positives: predicted positive but actually negative
-# false_positives = ((results["Predicted"] == positive_class) & 
-#                   (results["Actual"] != positive_class)).sum()
+# False Positives: predicted positive but actually negative
+false_positives = ((results["Predicted"] == positive_class) & 
+                  (results["Actual"] != positive_class)).sum()
 
-# # False Negatives: predicted negative but actually positive
-# false_negatives = ((results["Predicted"] != positive_class) & 
-#                   (results["Actual"] == positive_class)).sum()
+# False Negatives: predicted negative but actually positive
+false_negatives = ((results["Predicted"] != positive_class) & 
+                  (results["Actual"] == positive_class)).sum()
 
-# # Calculate precision using the formula: TP / (TP + FP)
-# precision = 0  # Default value
-# if (true_positives + false_positives) > 0:  # Avoid division by zero
-#     precision = true_positives / (true_positives + false_positives)
+# Calculate precision using the formula: TP / (TP + FP)
+precision = 0  # Default value
+if (true_positives + false_positives) > 0:  # Avoid division by zero
+    precision = true_positives / (true_positives + false_positives)
 
-# # Calculate recall using the formula: TP / (TP + FN)
-# recall = 0  # Default value
-# if (true_positives + false_negatives) > 0:  # Avoid division by zero
-#     recall = true_positives / (true_positives + false_negatives)
+# Calculate recall using the formula: TP / (TP + FN)
+recall = 0  # Default value
+if (true_positives + false_negatives) > 0:  # Avoid division by zero
+    recall = true_positives / (true_positives + false_negatives)
 
-# # Calculate specificity (TNR) using the formula: TN / (TN + FP)
-# # True Negatives: predicted negative and actually negative
-# true_negatives = ((results["Predicted"] != positive_class) & 
-#                  (results["Actual"] != positive_class)).sum()
+# Calculate specificity (TNR) using the formula: TN / (TN + FP)
+# True Negatives: predicted negative and actually negative
+true_negatives = ((results["Predicted"] != positive_class) & 
+                 (results["Actual"] != positive_class)).sum()
                  
-# specificity = 0  # Default value
-# if (true_negatives + false_positives) > 0:  # Avoid division by zero
-#     specificity = true_negatives / (true_negatives + false_positives)
+specificity = 0  # Default value
+if (true_negatives + false_positives) > 0:  # Avoid division by zero
+    specificity = true_negatives / (true_negatives + false_positives)
 
-# # Calculate F1-score using the formula: 2 * (Precision * Recall) / (Precision + Recall)
-# f1_score = 0  # Default value
-# if (precision + recall) > 0:  # Avoid division by zero
-#     f1_score = 2 * (precision * recall) / (precision + recall)
+# Calculate F1-score using the formula: 2 * (Precision * Recall) / (Precision + Recall)
+f1_score = 0  # Default value
+if (precision + recall) > 0:  # Avoid division by zero
+    f1_score = 2 * (precision * recall) / (precision + recall)
 
-# # Calculate Youden's Index (J-statistic) using the formula: Sensitivity + Specificity - 1
-# # Note: Sensitivity is the same as Recall
-# youdens_index = recall + specificity - 1
+# Calculate Youden's Index (J-statistic) using the formula: Sensitivity + Specificity - 1
+# Note: Sensitivity is the same as Recall
+youdens_index = recall + specificity - 1
 
-# # Calculate Matthews Correlation Coefficient (MCC)
-# mcc_numerator = (true_positives * true_negatives) - (false_positives * false_negatives)
-# mcc_denominator = ((true_positives + false_positives) * 
-#                    (true_positives + false_negatives) * 
-#                    (true_negatives + false_positives) * 
-#                    (true_negatives + false_negatives))
+# Calculate Matthews Correlation Coefficient (MCC)
+mcc_numerator = (true_positives * true_negatives) - (false_positives * false_negatives)
+mcc_denominator = ((true_positives + false_positives) * 
+                   (true_positives + false_negatives) * 
+                   (true_negatives + false_positives) * 
+                   (true_negatives + false_negatives))
 
-# # Default value
-# mcc = 0
-# # Avoid division by zero and square root of negative number
-# if mcc_denominator > 0:
-#     mcc = mcc_numerator / (mcc_denominator ** 0.5)
+# Default value
+mcc = 0
+# Avoid division by zero and square root of negative number
+if mcc_denominator > 0:
+    mcc = mcc_numerator / (mcc_denominator ** 0.5)
 
-# # Calculate AUC-ROC (Area Under the Receiver Operating Characteristic Curve)
-# auc_roc = 0  # Default value
-# try:
-#     # For binary classification or if classes are encoded as 0 and 1
-#     if y_prob is not None:
-#         if len(model.classes_) == 2:
-#             # Binary classification: use probabilities of the positive class
-#             auc_roc = roc_auc_score(y, y_prob[:, 1])
-#         else:
-#             # Multi-class: use one-vs-rest approach (ovr)
-#             auc_roc = roc_auc_score(pd.get_dummies(y), y_prob, multi_class='ovr')
-# except Exception as e:
-#     print(f"Warning: Could not calculate AUC-ROC: {e}")
+# Calculate AUC-ROC (Area Under the Receiver Operating Characteristic Curve)
+auc_roc = 0  # Default value
+try:
+    # For binary classification or if classes are encoded as 0 and 1
+    if y_prob is not None:
+        if len(model.classes_) == 2:
+            # Binary classification: use probabilities of the positive class
+            auc_roc = roc_auc_score(y, y_prob[:, 1])
+        else:
+            # Multi-class: use one-vs-rest approach (ovr)
+            auc_roc = roc_auc_score(pd.get_dummies(y), y_prob, multi_class='ovr')
+except Exception as e:
+    print(f"Warning: Could not calculate AUC-ROC: {e}")
 
-# # Calculate Logarithmic Loss (LogLoss)
-# # Formula: -(1/N) Σ [y_i log(ŷ_i) + (1-y_i) log(1-ŷ_i)]
-# logloss = 0  # Default value
-# try:
-#     if y_prob is not None:
-#         # Calculate log loss using scikit-learn's log_loss function
-#         logloss = log_loss(y, y_prob)
-# except Exception as e:
-#     print(f"Warning: Could not calculate LogLoss: {e}")
+# Calculate Logarithmic Loss (LogLoss)
+# Formula: -(1/N) Σ [y_i log(ŷ_i) + (1-y_i) log(1-ŷ_i)]
+logloss = 0  # Default value
+try:
+    if y_prob is not None:
+        # Calculate log loss using scikit-learn's log_loss function
+        logloss = log_loss(y, y_prob)
+except Exception as e:
+    print(f"Warning: Could not calculate LogLoss: {e}")
 
-# # Calculate Brier Score: (1/N) Σ (y_i - ŷ_i)^2
-# brier_score = 0  # Default value
-# try:
-#     if y_prob is not None and len(model.classes_) == 2:
-#         # Convert target to binary format for binary classification
-#         y_binary = (y == model.classes_[1]).astype(int)
-#         # Calculate Brier score using scikit-learn's brier_score_loss function
-#         brier_score = brier_score_loss(y_binary, y_prob[:, 1])
-# except Exception as e:
-#     print(f"Warning: Could not calculate Brier Score: {e}")
+# Calculate Brier Score: (1/N) Σ (y_i - ŷ_i)^2
+brier_score = 0  # Default value
+try:
+    if y_prob is not None and len(model.classes_) == 2:
+        # Convert target to binary format for binary classification
+        y_binary = (y == model.classes_[1]).astype(int)
+        # Calculate Brier score using scikit-learn's brier_score_loss function
+        brier_score = brier_score_loss(y_binary, y_prob[:, 1])
+except Exception as e:
+    print(f"Warning: Could not calculate Brier Score: {e}")
 
-# # Calculate Cohen's Kappa (inter-annotator agreement)
-# cohens_kappa = 0  # Default value
-# try:
-#     # Calculate Cohen's kappa using scikit-learn's cohen_kappa_score function
-#     cohens_kappa = cohen_kappa_score(y, predictions)
-# except Exception as e:
-#     print(f"Warning: Could not calculate Cohen's Kappa: {e}")
+# Calculate Cohen's Kappa (inter-annotator agreement)
+cohens_kappa = 0  # Default value
+try:
+    # Calculate Cohen's kappa using scikit-learn's cohen_kappa_score function
+    cohens_kappa = cohen_kappa_score(y, predictions)
+except Exception as e:
+    print(f"Warning: Could not calculate Cohen's Kappa: {e}")
 
-# # Calculate Balanced Accuracy: (Sensitivity + Specificity) / 2
-# # Note: Sensitivity is the same as Recall
-# balanced_accuracy = (recall + specificity) / 2
+# Calculate Balanced Accuracy: (Sensitivity + Specificity) / 2
+# Note: Sensitivity is the same as Recall
+balanced_accuracy = (recall + specificity) / 2
 
-
-
-
-
-
-
-
-
-
-
-
-
-# All your metrics calculations remain unchanged...
-# (omitted here for brevity — you already have that)
-
-# Final metrics logging
-print("\n========== Final Evaluation Metrics ==========")
-print(f"Accuracy: {accuracy:.4f} ({correct_predictions}/{total_predictions})")
+print(f"\nAccuracy: {accuracy:.4f} ({correct_predictions}/{total_predictions})")
 print(f"Precision: {precision:.4f} ({true_positives}/{true_positives + false_positives})")
 print(f"Recall: {recall:.4f} ({true_positives}/{true_positives + false_negatives})")
 print(f"Specificity: {specificity:.4f} ({true_negatives}/{true_negatives + false_positives})")
@@ -250,12 +230,16 @@ print(f"Brier Score: {brier_score:.4f}")
 print(f"Cohen's Kappa: {cohens_kappa:.4f}")
 print(f"Balanced Accuracy: {balanced_accuracy:.4f}")
 
-# Step 8: Log to MLflow
-print("\n========== MLflow Logging ==========")
+# Step 8: Log metrics to MLflow
+# Set the MLflow tracking URI
 mlflow.set_tracking_uri(mlflowURI)
+
+# Set the experiment
 mlflow.set_experiment(experiment_name)
 
+# Start an MLflow run
 with mlflow.start_run():
+    # Log the metrics
     mlflow.log_metric("accuracy", accuracy)
     mlflow.log_metric("precision", precision)
     mlflow.log_metric("recall", recall)
@@ -268,7 +252,9 @@ with mlflow.start_run():
     mlflow.log_metric("brier_score", brier_score)
     mlflow.log_metric("cohens_kappa", cohens_kappa)
     mlflow.log_metric("balanced_accuracy", balanced_accuracy)
-
+    
+    # You can log additional information if needed
     mlflow.log_param("model_path", weight_path)
     mlflow.log_param("dataset_path", dataset_path)
-    print(f"✅ Metrics logged to MLflow: {experiment_name}")
+    
+    print(f"Metrics successfully logged to MLflow experiment: {experiment_name}")
