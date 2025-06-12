@@ -337,16 +337,34 @@ export async function buildDockerImage(options) {
     if (!username || !password) {
       throw new Error("Docker Hub credentials are missing in environment variables.");
     }
+
+    
+    const dockerPsAllOutputBefor = await runCommand("docker ps -a", dir);
+    const dockerPsOutputBefore = await runCommand("docker ps", dir);
+    const dockerImagesBefore = await runCommand("docker images", dir);
+
+    console.log("📦 [buildDockerImage] Docker containers list: before\n", dockerPsAllOutputBefor);
+    console.log("📦 [buildDockerImage] Docker containers list: before\n", dockerPsOutputBefore);
+    console.log("📦 [buildDockerImage] Docker containers list: before\n", dockerImagesBefore);
+
     // Step 1: Remove any existing container
     await runCommand("docker rm -f aimx-evaluation || true", dir);
+
+    const dockerPsAllOutput = await runCommand("docker ps -a", dir);
+    const dockerPsOutput = await runCommand("docker ps", dir);
+    const dockerImages = await runCommand("docker images", dir);
+
+    console.log("📦 [buildDockerImage] Docker containers list: After\n", dockerPsAllOutput);
+    console.log("📦 [buildDockerImage] Docker containers list: After\n", dockerPsOutput);
+    console.log("📦 [buildDockerImage] Docker containers list: After\n", dockerPsOutput);
+
 
     // Step 2: Build the Docker image
     await runCommand("docker build -t aimx-evaluation .", dir);
     console.log(`✅ Docker image built in ${dir}`);
 
      // Step 3: Log current containers
-    const dockerPsOutput = await runCommand("docker ps -a", dir);
-    console.log("📦 [buildDockerImage] Docker containers list:\n", dockerPsOutput);
+
 
     // Step 3: Tag and push the image
     await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", dir);
