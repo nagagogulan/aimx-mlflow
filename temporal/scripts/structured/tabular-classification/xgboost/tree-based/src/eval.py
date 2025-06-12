@@ -1,4 +1,5 @@
 import os
+import sys
 import sklearn
 import traceback
 import pandas as pd
@@ -27,42 +28,45 @@ print(f"  TARGET_COLUMN      : {target_column}")
 
 experiment_name = os.getenv("EXPERIMENT_NAME")
 print(f"  EXPERIMENT_NAME    : {experiment_name}")
-print(f"  scikit-learn version: {sklearn.__version__}")
+print(f"  scikit-learn version: {sklearn.__version__}",flus=True)
 
-rint("\n========== Directory Diagnostics ==========")
+print("\n========== Directory Diagnostics ==========", flush=True)
 cwd = os.getcwd()
-print(f"  Current Working Directory: {cwd}")
+print(f"  Current Working Directory: {cwd}", flush=True)
 
 try:
-    print("  Files & folders in working directory:")
+        print("  Files & folders in working directory:", flush=True)
     for f in os.listdir(cwd):
         full_path = os.path.join(cwd, f)
-        print(f"   └── {full_path}")
+        print(f"   └── {full_path}", flush=True)
 
     # Show weights and datasets dir content with full paths
     weights_dir = os.path.abspath(os.path.dirname(weight_path))
     dataset_dir = os.path.abspath(os.path.dirname(dataset_path))
 
     if os.path.isdir(weights_dir):
-        print(f"\n  Contents of weights dir ({weights_dir}):")
+        print(f"\n  Contents of weights dir ({weights_dir}):", flush=True)
         for f in os.listdir(weights_dir):
-            print(f"   └── {os.path.join(weights_dir, f)}")
+            print(f"   └── {os.path.join(weights_dir, f)}", flush=True)
 
     if os.path.isdir(dataset_dir):
-        print(f"\n  Contents of datasets dir ({dataset_dir}):")
+        print(f"\n  Contents of datasets dir ({dataset_dir}):", flush=True)
         for f in os.listdir(dataset_dir):
-            print(f"   └── {os.path.join(dataset_dir, f)}")
+            print(f"   └── {os.path.join(dataset_dir, f)}", flush=True)
 
 except Exception as e:
-    print(f"⚠️ Error reading directory contents: {e}")
+    print(f"⚠️ Error reading directory contents: {e}", flush=True)
     traceback.print_exc()
 
-print("\n========== Data Loading ==========")
+    
+print("\n========== Data Loading ==========", flush=True)
+print(f"📦 Attempting to load dataset from: {dataset_path}", flush=True)
+
 try:
     df = pd.read_csv(dataset_path)
-    print(f"✅ Loaded dataset with shape: {df.shape}")
+    print(f"✅ Loaded dataset with shape: {df.shape}", flush=True)
 except Exception as e:
-    print(f"❌ Failed to load dataset from {dataset_path}")
+    print(f"❌ Failed to load dataset from: {dataset_path}", flush=True)
     traceback.print_exc()
     raise
 
