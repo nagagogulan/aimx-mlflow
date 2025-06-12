@@ -10,10 +10,20 @@ from sklearn.metrics import brier_score_loss
 load_dotenv()
 
 mlflowURI = os.getenv("MLFLOW_TRACKING_URI")
+print(f"  MLFLOW_TRACKING_URI: {mlflowURI}")
+
 weight_path = os.getenv("MODEL_WIGHTS_PATH")
+print(f"  MODEL_WIGHTS_PATH  : {weight_path}")
+
 dataset_path = os.getenv("DATASET_PATH")
+print(f"  DATASET_PATH       : {dataset_path}")
+
 target_column = os.getenv("TARGET_COLUMN")
+print(f"  TARGET_COLUMN      : {target_column}")
+
 experiment_name = os.getenv("EXPERIMENT_NAME")
+print(f"  EXPERIMENT_NAME    : {experiment_name}")
+
 
 # Step 1: Load the dataset
 df = pd.read_csv(dataset_path)
