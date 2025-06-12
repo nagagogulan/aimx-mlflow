@@ -55,8 +55,9 @@ COPY datasets/ /app/datasets/
 # Set the pip cache directory to a volume
 ENV PIP_CACHE_DIR=/root/.cache/pip
  
-# Command to run the application
-CMD ["python3", "src/eval.py"]
+# # Command to run the application
+# CMD ["python3", "src/eval.py"]
 
 
+CMD ["python3", "-u", "src/eval.py"]
 
