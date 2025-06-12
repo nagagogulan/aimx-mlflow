@@ -619,7 +619,9 @@ function getContainerEnvConfig(options, inferenceData) {
     name: "aimx-evaluation",
     image: "nagagogulan/aimx-evaluation:latest",
     imagePullPolicy: "IfNotPresent",
-    env: baseEnv
+    env: baseEnv,
+    workingDir: "/app"
+
   }];
 }
 

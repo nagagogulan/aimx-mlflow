@@ -17,10 +17,10 @@ load_dotenv()
 mlflowURI = os.getenv("MLFLOW_TRACKING_URI")
 print(f"  MLFLOW_TRACKING_URI: {mlflowURI}")
 
-weight_path = os.getenv("MODEL_WIGHTS_PATH")
+weight_path = os.path.abspath(os.getenv("MODEL_WIGHTS_PATH"))
 print(f"  MODEL_WIGHTS_PATH  : {weight_path}")
 
-dataset_path = os.getenv("DATASET_PATH")
+dataset_path = os.path.abspath(os.getenv("DATASET_PATH"))
 print(f"  DATASET_PATH       : {dataset_path}")
 
 target_column = os.getenv("TARGET_COLUMN")
@@ -58,7 +58,7 @@ except Exception as e:
     print(f"⚠️ Error reading directory contents: {e}", flush=True)
     traceback.print_exc()
 
-    
+
 print("\n========== Data Loading ==========", flush=True)
 print(f"📦 Attempting to load dataset from: {dataset_path}", flush=True)
 
