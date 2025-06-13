@@ -592,7 +592,10 @@ export async function runEvaluationsInCluster(options, inferenceData) {
     await k8sBatchApi.createNamespacedJob({ namespace, body: jobManifest });
 
     console.log(`✅ Kubernetes job '${jobName}' created successfully.`);
-    return { jobName, namespace };
+    return {
+      jobName: jobName.trim(),
+      namespace: namespace.trim(),
+     };
   } catch (error) {
     console.error(`❌ Failed to create Kubernetes job '${jobName}':`, error.message);
     throw error;
@@ -762,6 +765,15 @@ export async function waitForJobCompletion(
   timeoutMs = 600000, // 10 minutes
   pollInterval = 5000 // 5 seconds
 ) {
+  jobName = jobName?.trim();
+  namespace = namespace?.trim();
+
+  if (!jobName || !namespace) {
+    throw new Error(`[waitForJobCompletion] Missing jobName or namespace. jobName='${jobName}', namespace='${namespace}'`);
+  }
+
+  console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
+
   console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
 
   const kc = new k8s.KubeConfig();

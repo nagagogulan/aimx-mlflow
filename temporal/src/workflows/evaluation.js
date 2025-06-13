@@ -56,10 +56,10 @@ export async function runEval(payload) {
   evalData = await runStep("Launching evaluations in cluster", () =>
     runEvaluationsInCluster(payload, inferenceData)
   );
-    console.log("evalData is succeededdddd*************************", evalData)
 
-    console.log("jobStatus is succeededdddd*************************: inputttt", evalData.jobName,  evalData.namespace)
-
+    if (!evalData?.jobName || !evalData?.namespace) {
+  throw new Error(`[runEval] Invalid evalData: ${JSON.stringify(evalData)}`);
+}
   jobStatus = await runStep("Waiting for job completion", () =>
     waitForJobCompletion(evalData.jobName, evalData.namespace)
   );
