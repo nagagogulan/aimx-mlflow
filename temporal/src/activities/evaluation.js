@@ -545,7 +545,7 @@ export async function runEvaluations(options) {
 
 export async function runEvaluationsInCluster(options, inferenceData) {
 
-  await cleanMinikubeDockerResources();
+  // await cleanMinikubeDockerResources();
   const randomString = generateRandomString(4).toLowerCase();
   const namespace = process?.env?.NAMESPACE || "default";
   const jobName = `aimx-evaluation-${randomString}`;
