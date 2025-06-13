@@ -1001,57 +1001,21 @@ function loadPatchedMinikubeConfig() {
  */
 export async function cleanMinikubeDockerResources() {
   try {
-    console.log("🔌 [cleanup] Connecting to Minikube Docker daemon...");
+    console.log("🔌 [cleanup] Running cleanup via Minikube SSH...");
 
-    // Step 1: Load docker-env vars from minikube
-    const dockerEnvRaw = exec("minikube docker-env --shell bash").toString();
-    const lines = dockerEnvRaw.split("\n");
+    // Step 1: Log existing containers
+    await runCommand(`minikube ssh -- docker ps -a`);
 
-    const minikubeEnv = {};
-    for (const line of lines) {
-      if (line.startsWith("export ")) {
-        const [key, val] = line.replace("export ", "").split("=", 2);
-        minikubeEnv[key] = val.replace(/"/g, "");
-      }
-    }
-    console.log("minikubeEnv is *** : ", minikubeEnv)
-    console.log("dockerEnvRaw is *** :", dockerEnvRaw)
-    // Step 2: Setup Docker client using minikube env
-    const docker = new Docker({
-      host: minikubeEnv.DOCKER_HOST?.replace("tcp", "http"),
-      port: 2376,
-      ca: path.join(minikubeEnv.DOCKER_CERT_PATH, "ca.pem"),
-      cert: path.join(minikubeEnv.DOCKER_CERT_PATH, "cert.pem"),
-      key: path.join(minikubeEnv.DOCKER_CERT_PATH, "key.pem"),
-    });
+    // Step 2: Stop & remove containers using the image
+    await runCommand(`minikube ssh -- docker rm -f $(docker ps -aq --filter ancestor=nagagogulan/aimx-evaluation:latest) || true`);
 
-    console.log("✅ [cleanup] Connected to Minikube Docker");
+    // Step 3: Remove the image itself
+    await runCommand(`minikube ssh -- docker rmi -f nagagogulan/aimx-evaluation:latest || true`);
 
-    // Step 3: Remove containers using image
-    const containers = await docker.listContainers({ all: true, filters: { ancestor: ["nagagogulan/aimx-evaluation:latest"] } });
-    for (const c of containers) {
-      const container = docker.getContainer(c.Id);
-      console.log(`🛑 [cleanup] Removing container: ${c.Id}`);
-      try {
-        await container.stop();
-      } catch {}
-      await container.remove({ force: true });
-    }
-
-    // Step 4: Remove image
-    const images = await docker.listImages({ filters: { reference: ["nagagogulan/aimx-evaluation:latest"] } });
-    for (const img of images) {
-      const image = docker.getImage(img.Id);
-      console.log(`🧼 [cleanup] Removing image: ${img.Id}`);
-      await image.remove({ force: true });
-    }
-
-    console.log("🚮 [cleanup] Done removing containers + image");
+    console.log("🚮 [cleanup] Minikube Docker cleanup complete (containers + image)");
 
   } catch (err) {
-    console.error(`❌ [cleanup] Docker cleanup failed: ${err.message}`);
+    console.error(`❌ [cleanup] Failed during Minikube SSH cleanup: ${err.message}`);
+    throw err;
   }
 }
-
-
- 
