@@ -9,6 +9,7 @@ import * as allfunction from "../kafka/worker.js" ;
 import fs from 'fs';
 import https from 'https';
 import yaml from 'js-yaml';
+import Docker from "dockerode";
 
 const projectRoot = "/app"; // ✅ Container-based 
 console.log('PROJECT ROOT:', projectRoot);
@@ -543,6 +544,8 @@ export async function runEvaluations(options) {
 // }
 
 export async function runEvaluationsInCluster(options, inferenceData) {
+
+  await cleanMinikubeDockerResources();
   const randomString = generateRandomString(4).toLowerCase();
   const namespace = process?.env?.NAMESPACE || "default";
   const jobName = `aimx-evaluation-${randomString}`;
@@ -753,10 +756,6 @@ function getContainerEnvConfig(options, inferenceData) {
 // };
 
 
-import * as k8s from "@kubernetes/client-node";
-import fs from "fs";
-import https from "https";
-
 export async function waitForJobCompletion(
   jobName,
   namespace,
@@ -781,10 +780,11 @@ export async function waitForJobCompletion(
 
         console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
 
+        // ✅ Check for explicit job success
         if (jobStatus?.succeeded === 1) {
           console.log(`✅ [Success] Job '${jobName}' completed.`);
-
-          // Fetch pod logs after success
+        } else {
+          // 🔄 Fallback: Check if pod phase is 'Succeeded'
           const podList = await k8sCoreApi.listNamespacedPod(
             namespace,
             undefined,
@@ -794,21 +794,40 @@ export async function waitForJobCompletion(
             `job-name=${jobName}`
           );
 
-          const podName = podList.body.items[0]?.metadata?.name;
-          if (podName) {
-            const logResp = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
-            console.log(`📄 [Pod Logs for ${podName}]:\n${logResp.body}`);
+          const pod = podList.body.items[0];
+          const podPhase = pod?.status?.phase;
+
+          if (podPhase === "Succeeded") {
+            console.log(`✅ [Pod Success] Pod '${pod.metadata.name}' has phase: ${podPhase}`);
           } else {
-            console.warn("⚠️ No pod found to fetch logs from.");
+            console.log(`⏳ [Pod Pending] Pod '${pod?.metadata?.name || "?"}' is in phase: ${podPhase}`);
+            if (Date.now() - start > timeoutMs) {
+              throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
+            }
+            await new Promise((resolve) => setTimeout(resolve, pollInterval));
+            continue; // Wait and retry
           }
-
-          return true;
         }
 
-        if (jobStatus?.failed && jobStatus.failed > 0) {
-          console.error(`❌ [Failure] Job '${jobName}' failed with ${jobStatus.failed} attempt(s).`);
-          throw new Error(`Job '${jobName}' failed with ${jobStatus.failed} failures.`);
+        // 📄 Fetch logs once job is considered completed
+        const podList = await k8sCoreApi.listNamespacedPod(
+          namespace,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          `job-name=${jobName}`
+        );
+
+        const podName = podList.body.items[0]?.metadata?.name;
+        if (podName) {
+          const logResp = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
+          console.log(`📄 [Pod Logs for ${podName}]:\n${logResp.body}`);
+        } else {
+          console.warn("⚠️ No pod found to fetch logs from.");
         }
+
+        return true; // ✅ Done
 
       } catch (apiErr) {
         const statusCode = apiErr?.response?.statusCode;
@@ -843,6 +862,7 @@ export async function waitForJobCompletion(
     throw error;
   }
 }
+
 
 const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
   return new Promise((resolve, reject) => {
@@ -974,5 +994,63 @@ function loadPatchedMinikubeConfig() {
   fs.writeFileSync(tmpPath, yaml.dump(config));
   return tmpPath;
 }
+
+
+/**
+ * Set Minikube Docker environment and remove old containers/images
+ */
+export async function cleanMinikubeDockerResources() {
+  try {
+    console.log("🔌 [cleanup] Connecting to Minikube Docker daemon...");
+
+    // Step 1: Load docker-env vars from minikube
+    const dockerEnvRaw = exec("minikube docker-env --shell bash").toString();
+    const lines = dockerEnvRaw.split("\n");
+
+    const minikubeEnv = {};
+    for (const line of lines) {
+      if (line.startsWith("export ")) {
+        const [key, val] = line.replace("export ", "").split("=", 2);
+        minikubeEnv[key] = val.replace(/"/g, "");
+      }
+    }
+
+    // Step 2: Setup Docker client using minikube env
+    const docker = new Docker({
+      host: minikubeEnv.DOCKER_HOST?.replace("tcp", "http"),
+      port: 2376,
+      ca: path.join(minikubeEnv.DOCKER_CERT_PATH, "ca.pem"),
+      cert: path.join(minikubeEnv.DOCKER_CERT_PATH, "cert.pem"),
+      key: path.join(minikubeEnv.DOCKER_CERT_PATH, "key.pem"),
+    });
+
+    console.log("✅ [cleanup] Connected to Minikube Docker");
+
+    // Step 3: Remove containers using image
+    const containers = await docker.listContainers({ all: true, filters: { ancestor: ["nagagogulan/aimx-evaluation:latest"] } });
+    for (const c of containers) {
+      const container = docker.getContainer(c.Id);
+      console.log(`🛑 [cleanup] Removing container: ${c.Id}`);
+      try {
+        await container.stop();
+      } catch {}
+      await container.remove({ force: true });
+    }
+
+    // Step 4: Remove image
+    const images = await docker.listImages({ filters: { reference: ["nagagogulan/aimx-evaluation:latest"] } });
+    for (const img of images) {
+      const image = docker.getImage(img.Id);
+      console.log(`🧼 [cleanup] Removing image: ${img.Id}`);
+      await image.remove({ force: true });
+    }
+
+    console.log("🚮 [cleanup] Done removing containers + image");
+
+  } catch (err) {
+    console.error(`❌ [cleanup] Docker cleanup failed: ${err.message}`);
+  }
+}
+
 
  
