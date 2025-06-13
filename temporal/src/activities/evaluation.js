@@ -1014,7 +1014,8 @@ export async function cleanMinikubeDockerResources() {
         minikubeEnv[key] = val.replace(/"/g, "");
       }
     }
-
+    console.log("minikubeEnv is *** : ", minikubeEnv)
+    console.log("dockerEnvRaw is *** :", dockerEnvRaw)
     // Step 2: Setup Docker client using minikube env
     const docker = new Docker({
       host: minikubeEnv.DOCKER_HOST?.replace("tcp", "http"),
