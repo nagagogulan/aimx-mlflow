@@ -51,14 +51,21 @@ export async function runEval(payload) {
   buildData = await runStep("Building Docker image", () =>
     buildDockerImage(inferenceData)
   );
+  console.log("buildData is succeededdddd*************************", buildData)
 
   evalData = await runStep("Launching evaluations in cluster", () =>
     runEvaluationsInCluster(payload, inferenceData)
   );
+    console.log("evalData is succeededdddd*************************", evalData)
+
+    console.log("jobStatus is succeededdddd*************************: inputttt", evalData.jobName,  evalData.namespace)
 
   jobStatus = await runStep("Waiting for job completion", () =>
     waitForJobCompletion(evalData.jobName, evalData.namespace)
   );
+
+      console.log("jobStatus is succeededdddd*************************: outputtt", jobStatus)
+
 
   if (jobStatus) {
     const uuid = payload.uuid || "unknown-uuid";
