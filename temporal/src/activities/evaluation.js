@@ -774,54 +774,23 @@ export async function waitForJobCompletion(
 
   console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
 
-  console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
-
   const kc = new k8s.KubeConfig();
+  kc.loadFromFile(loadPatchedMinikubeConfig());
+
+  const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+  const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
   const start = Date.now();
 
-  try {
-    kc.loadFromFile(loadPatchedMinikubeConfig());
+  while (true) {
+    try {
+      const jobResp = await k8sBatchApi.readNamespacedJob(jobName, namespace); // ✅ POSITIONS
+      const jobStatus = jobResp.body?.status;
 
-    const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
-    const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
+      console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
 
-    while (true) {
-      try {
-        const jobResp = await k8sBatchApi.readNamespacedJob(jobName, namespace);
-        const jobStatus = jobResp.body?.status;
-
-        console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
-
-        // ✅ Check for explicit job success
-        if (jobStatus?.succeeded === 1) {
-          console.log(`✅ [Success] Job '${jobName}' completed.`);
-        } else {
-          // 🔄 Fallback: Check if pod phase is 'Succeeded'
-          const podList = await k8sCoreApi.listNamespacedPod(
-            namespace,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            `job-name=${jobName}`
-          );
-
-          const pod = podList.body.items[0];
-          const podPhase = pod?.status?.phase;
-
-          if (podPhase === "Succeeded") {
-            console.log(`✅ [Pod Success] Pod '${pod.metadata.name}' has phase: ${podPhase}`);
-          } else {
-            console.log(`⏳ [Pod Pending] Pod '${pod?.metadata?.name || "?"}' is in phase: ${podPhase}`);
-            if (Date.now() - start > timeoutMs) {
-              throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
-            }
-            await new Promise((resolve) => setTimeout(resolve, pollInterval));
-            continue; // Wait and retry
-          }
-        }
-
-        // 📄 Fetch logs once job is considered completed
+      if (jobStatus?.succeeded === 1) {
+        console.log(`✅ Job '${jobName}' completed successfully.`);
+      } else {
         const podList = await k8sCoreApi.listNamespacedPod(
           namespace,
           undefined,
@@ -831,49 +800,53 @@ export async function waitForJobCompletion(
           `job-name=${jobName}`
         );
 
-        const podName = podList.body.items[0]?.metadata?.name;
-        if (podName) {
-          const logResp = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
-          console.log(`📄 [Pod Logs for ${podName}]:\n${logResp.body}`);
+        const pod = podList.body.items[0];
+        const podPhase = pod?.status?.phase;
+
+        if (podPhase === "Succeeded") {
+          console.log(`✅ [Pod Success] Pod '${pod.metadata.name}' has phase: ${podPhase}`);
         } else {
-          console.warn("⚠️ No pod found to fetch logs from.");
-        }
-
-        return true; // ✅ Done
-
-      } catch (apiErr) {
-        const statusCode = apiErr?.response?.statusCode;
-        const rawBody = apiErr?.response?.body;
-
-        if (statusCode === 404) {
-          console.warn(`⚠️ [NotFound] Job '${jobName}' not found. It may not be created yet or was deleted.`);
-        } else {
-          console.error(`❌ [API Error] Failed to fetch job status. Code=${statusCode}`);
-          if (rawBody) {
-            try {
-              const parsed = JSON.parse(rawBody);
-              console.error(`📄 [ErrorBody]: ${JSON.stringify(parsed, null, 2)}`);
-            } catch {
-              console.error(`📄 [RawBody]: ${rawBody}`);
-            }
+          console.log(`⏳ [Pod Phase] '${pod?.metadata?.name}' is '${podPhase}'`);
+          if (Date.now() - start > timeoutMs) {
+            throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
           }
-          throw apiErr;
+          await new Promise((res) => setTimeout(res, pollInterval));
+          continue;
         }
       }
 
-      if (Date.now() - start > timeoutMs) {
-        console.error(`⏰ [Timeout] Gave up waiting after ${timeoutMs / 1000} seconds.`);
-        throw new Error(`Timeout while waiting for job '${jobName}' to complete.`);
+      // Fetch logs
+      const podList = await k8sCoreApi.listNamespacedPod(namespace, undefined, undefined, undefined, undefined, `job-name=${jobName}`);
+      const podName = podList.body.items[0]?.metadata?.name;
+
+      if (podName) {
+        const logs = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
+        console.log(`📄 [Pod Logs: ${podName}]:\n${logs.body}`);
+      } else {
+        console.warn(`⚠️ No pod logs found.`);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      return true;
+
+    } catch (err) {
+      const statusCode = err?.response?.statusCode;
+
+      if (statusCode === 404) {
+        console.warn(`⚠️ Job '${jobName}' not found — retrying...`);
+      } else {
+        console.error(`❌ API error: ${err.message}`);
+        throw err;
+      }
     }
 
-  } catch (error) {
-    console.error(`❌ [Fatal] waitForJobCompletion crashed: ${error.message}`);
-    throw error;
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
+    }
+
+    await new Promise((res) => setTimeout(res, pollInterval));
   }
 }
+
 
 
 const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {

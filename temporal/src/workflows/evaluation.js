@@ -43,61 +43,44 @@ export async function runEval(payload) {
   logStep("Step 1: Received payload", payload);
 
   let inferenceData, buildData, evalData, jobStatus;
-  const uuid = payload.uuid || "unknown-uuid";
 
-  try {
-    inferenceData = await runStep("Copying inference scripts", () =>
-      copyInferenceScripts(payload)
-    );
+  inferenceData = await runStep("Copying inference scripts", () =>
+    copyInferenceScripts(payload)
+  );
 
-    buildData = await runStep("Building Docker image", () =>
-      buildDockerImage(inferenceData)
-    );
+  buildData = await runStep("Building Docker image", () =>
+    buildDockerImage(inferenceData)
+  );
 
-    evalData = await runStep("Launching evaluations in cluster", () =>
-      runEvaluationsInCluster(payload, inferenceData)
-    );
+  evalData = await runStep("Launching evaluations in cluster", () =>
+    runEvaluationsInCluster(payload, inferenceData)
+  );
 
-    if (!evalData?.jobName || !evalData?.namespace) {
-      throw new Error(`[runEval] Invalid evalData: ${JSON.stringify(evalData)}`);
-    }
+  jobStatus = await runStep("Waiting for job completion", () =>
+    waitForJobCompletion(evalData.jobName, evalData.namespace)
+  );
 
-    jobStatus = await runStep("Waiting for job completion", () =>
-      waitForJobCompletion(evalData.jobName, evalData.namespace)
-    );
+  if (jobStatus) {
+    const uuid = payload.uuid || "unknown-uuid";
+    const status = "success";
 
-    // ✅ Send success status
     try {
-      logStep("Sending docket success status...");
-      await sendDocketStatus(uuid, "success");
+      logStep("Sending docket status...");
+      await sendDocketStatus(uuid, status);
       logStep("✅ Docket status sent");
     } catch (err) {
       logError("Sending docket status", err);
+      // Do not rethrow — this failure won't affect workflow result
     }
-
-    logStep("🏁 Workflow completed successfully");
-
-    return {
-      status: "OK",
-      inferenceData,
-      buildData,
-      evalData,
-      jobStatus,
-    };
-
-  } catch (err) {
-    // ❌ If any step failed, report failure
-    logError("Workflow execution", err);
-
-    try {
-      logStep("Sending docket failure status...");
-      await sendDocketStatus(uuid, "failed");
-      logStep("✅ Failure status sent");
-    } catch (sendErr) {
-      logError("Sending failure status", sendErr);
-    }
-
-    // Ensure the workflow fails in Temporal
-    throw new Error(`Workflow failed: ${err.message}`);
   }
+
+  logStep("🏁 Workflow completed successfully");
+
+  return {
+    status: "OK",
+    inferenceData,
+    buildData,
+    evalData,
+    jobStatus,
+  };
 }
