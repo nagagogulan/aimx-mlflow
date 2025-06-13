@@ -637,43 +637,43 @@ function getContainerEnvConfig(options, inferenceData) {
 
 
 
-// export async function waitForJobCompletion(
-//   jobName,
-//   namespace,
-//   timeoutMs = 600000,
-//   pollInterval = 5000
-// ) {
-//   const kc = new k8s.KubeConfig();
-//   // kc.loadFromDefault(); // This will load from ~/.kube/config
-//     kc.loadFromFile(loadPatchedMinikubeConfig()); // ✅ Use patched kubeconfig
-//   const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-//   const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
-//   const start = Date.now();
+export async function waitForJobCompletion(
+  jobName,
+  namespace,
+  timeoutMs = 600000,
+  pollInterval = 5000
+) {
+  const kc = new k8s.KubeConfig();
+  // kc.loadFromDefault(); // This will load from ~/.kube/config
+    kc.loadFromFile(loadPatchedMinikubeConfig()); // ✅ Use patched kubeconfig
+  const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+  const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+  const start = Date.now();
 
-//   while (true) {
-//     const job = await k8sBatchApi.readNamespacedJob({
-//       name: jobName,
-//       namespace,
-//     });
+  while (true) {
+    const job = await k8sBatchApi.readNamespacedJob({
+      name: jobName,
+      namespace,
+    });
 
-//     if (job.status.succeeded === 1) {
-//       console.log(`✅ Job ${jobName} completed successfully.`);
-//       return true;
-//     }
+    if (job.status.succeeded === 1) {
+      console.log(`✅ Job ${jobName} completed successfully.`);
+      return true;
+    }
 
-//     if (job.status.failed && job.status.failed > 0) {
-//       throw new Error(
-//         `❌ Job ${jobName} failed with ${job.status.failed} failures.`
-//       );
-//     }
+    if (job.status.failed && job.status.failed > 0) {
+      throw new Error(
+        `❌ Job ${jobName} failed with ${job.status.failed} failures.`
+      );
+    }
 
-//     if (Date.now() - start > timeoutMs) {
-//       throw new Error(`⏰ Timeout waiting for Job ${jobName} to complete.`);
-//     }
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`⏰ Timeout waiting for Job ${jobName} to complete.`);
+    }
 
-//     await new Promise((resolve) => setTimeout(resolve, pollInterval));
-//   }
-// }
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+}
 
 // export async function waitForJobCompletion(
 //   jobName,
@@ -759,93 +759,93 @@ function getContainerEnvConfig(options, inferenceData) {
 // };
 
 
-export async function waitForJobCompletion(
-  jobName,
-  namespace,
-  timeoutMs = 600000, // 10 minutes
-  pollInterval = 5000 // 5 seconds
-) {
-  jobName = jobName?.trim();
-  namespace = namespace?.trim();
+// export async function waitForJobCompletion(
+//   jobName,
+//   namespace,
+//   timeoutMs = 600000, // 10 minutes
+//   pollInterval = 5000 // 5 seconds
+// ) {
+//   jobName = jobName?.trim();
+//   namespace = namespace?.trim();
 
-  if (!jobName || !namespace) {
-    throw new Error(`[waitForJobCompletion] Missing jobName or namespace. jobName='${jobName}', namespace='${namespace}'`);
-  }
+//   if (!jobName || !namespace) {
+//     throw new Error(`[waitForJobCompletion] Missing jobName or namespace. jobName='${jobName}', namespace='${namespace}'`);
+//   }
 
-  console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
+//   console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
 
-  const kc = new k8s.KubeConfig();
-  kc.loadFromFile(loadPatchedMinikubeConfig());
+//   const kc = new k8s.KubeConfig();
+//   kc.loadFromFile(loadPatchedMinikubeConfig());
 
-  const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
-  const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
-  const start = Date.now();
+//   const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
+//   const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
+//   const start = Date.now();
 
-  while (true) {
-    try {
-      const jobResp = await k8sBatchApi.readNamespacedJob(jobName, namespace); // ✅ POSITIONS
-      const jobStatus = jobResp.body?.status;
+//   while (true) {
+//     try {
+//       const jobResp = await k8sBatchApi.readNamespacedJob(jobName, namespace); // ✅ POSITIONS
+//       const jobStatus = jobResp.body?.status;
 
-      console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
+//       console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
 
-      if (jobStatus?.succeeded === 1) {
-        console.log(`✅ Job '${jobName}' completed successfully.`);
-      } else {
-        const podList = await k8sCoreApi.listNamespacedPod(
-          namespace,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          `job-name=${jobName}`
-        );
+//       if (jobStatus?.succeeded === 1) {
+//         console.log(`✅ Job '${jobName}' completed successfully.`);
+//       } else {
+//         const podList = await k8sCoreApi.listNamespacedPod(
+//           namespace,
+//           undefined,
+//           undefined,
+//           undefined,
+//           undefined,
+//           `job-name=${jobName}`
+//         );
 
-        const pod = podList.body.items[0];
-        const podPhase = pod?.status?.phase;
+//         const pod = podList.body.items[0];
+//         const podPhase = pod?.status?.phase;
 
-        if (podPhase === "Succeeded") {
-          console.log(`✅ [Pod Success] Pod '${pod.metadata.name}' has phase: ${podPhase}`);
-        } else {
-          console.log(`⏳ [Pod Phase] '${pod?.metadata?.name}' is '${podPhase}'`);
-          if (Date.now() - start > timeoutMs) {
-            throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
-          }
-          await new Promise((res) => setTimeout(res, pollInterval));
-          continue;
-        }
-      }
+//         if (podPhase === "Succeeded") {
+//           console.log(`✅ [Pod Success] Pod '${pod.metadata.name}' has phase: ${podPhase}`);
+//         } else {
+//           console.log(`⏳ [Pod Phase] '${pod?.metadata?.name}' is '${podPhase}'`);
+//           if (Date.now() - start > timeoutMs) {
+//             throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
+//           }
+//           await new Promise((res) => setTimeout(res, pollInterval));
+//           continue;
+//         }
+//       }
 
-      // Fetch logs
-      const podList = await k8sCoreApi.listNamespacedPod(namespace, undefined, undefined, undefined, undefined, `job-name=${jobName}`);
-      const podName = podList.body.items[0]?.metadata?.name;
+//       // Fetch logs
+//       const podList = await k8sCoreApi.listNamespacedPod(namespace, undefined, undefined, undefined, undefined, `job-name=${jobName}`);
+//       const podName = podList.body.items[0]?.metadata?.name;
 
-      if (podName) {
-        const logs = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
-        console.log(`📄 [Pod Logs: ${podName}]:\n${logs.body}`);
-      } else {
-        console.warn(`⚠️ No pod logs found.`);
-      }
+//       if (podName) {
+//         const logs = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
+//         console.log(`📄 [Pod Logs: ${podName}]:\n${logs.body}`);
+//       } else {
+//         console.warn(`⚠️ No pod logs found.`);
+//       }
 
-      return true;
+//       return true;
 
-    } catch (err) {
-      const statusCode = err?.response?.statusCode;
+//     } catch (err) {
+//       const statusCode = err?.response?.statusCode;
 
-      if (statusCode === 404) {
-        console.warn(`⚠️ Job '${jobName}' not found — retrying...`);
-      } else {
-        console.error(`❌ API error: ${err.message}`);
-        throw err;
-      }
-    }
+//       if (statusCode === 404) {
+//         console.warn(`⚠️ Job '${jobName}' not found — retrying...`);
+//       } else {
+//         console.error(`❌ API error: ${err.message}`);
+//         throw err;
+//       }
+//     }
 
-    if (Date.now() - start > timeoutMs) {
-      throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
-    }
+//     if (Date.now() - start > timeoutMs) {
+//       throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
+//     }
 
-    await new Promise((res) => setTimeout(res, pollInterval));
-  }
-}
+//     await new Promise((res) => setTimeout(res, pollInterval));
+//   }
+// }
 
 
 

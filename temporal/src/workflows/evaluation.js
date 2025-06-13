@@ -9,78 +9,41 @@ const {
   waitForJobCompletion,
   sendDocketStatus,
 } = proxyActivities({
-  startToCloseTimeout: "20 minute",
+  startToCloseTimeout: "5 minute",
   retry: {
     initialInterval: "60 second",
     maximumAttempts: 1,
+    // maximumAttempts: 5,
+    // backoffCoefficient: 2,
   },
 });
 
-// Utility logger
-const logStep = (msg, obj = null) => {
-  console.log(`🟢 [runEval] ${msg}`);
-  if (obj) console.log(JSON.stringify(obj, null, 2));
-};
-
-const logError = (step, err) => {
-  console.error(`❌ [runEval] ${step} failed:\n  ↳ ${err.message}`);
-};
-
-// Step runner with context
-const runStep = async (stepName, fn) => {
-  try {
-    logStep(`Step: ${stepName}...`);
-    const result = await fn();
-    logStep(`✅ Step "${stepName}" completed successfully`);
-    return result;
-  } catch (err) {
-    logError(stepName, err);
-    throw new Error(`Step "${stepName}" failed: ${err.message}`);
-  }
-};
-
 export async function runEval(payload) {
-  logStep("Step 1: Received payload", payload);
-
-  let inferenceData, buildData, evalData, jobStatus;
-
-  inferenceData = await runStep("Copying inference scripts", () =>
-    copyInferenceScripts(payload)
+  const inferenceData = await copyInferenceScripts(payload);
+  const buildData = await buildDockerImage(inferenceData);
+  const evalData = await runEvaluationsInCluster(payload, inferenceData);
+  const jobStatus = await waitForJobCompletion(
+    evalData.jobName,
+    evalData.namespace
   );
-
-  buildData = await runStep("Building Docker image", () =>
-    buildDockerImage(inferenceData)
-  );
-
-  evalData = await runStep("Launching evaluations in cluster", () =>
-    runEvaluationsInCluster(payload, inferenceData)
-  );
-
-  jobStatus = await runStep("Waiting for job completion", () =>
-    waitForJobCompletion(evalData.jobName, evalData.namespace)
-  );
-
+  // const evalData = await runEvaluations(inferenceData);  
+  console.log("evalDat is ", jobStatus);
   if (jobStatus) {
-    const uuid = payload.uuid || "unknown-uuid";
-    const status = "success";
-
-    try {
-      logStep("Sending docket status...");
-      await sendDocketStatus(uuid, status);
-      logStep("✅ Docket status sent");
-    } catch (err) {
-      logError("Sending docket status", err);
-      // Do not rethrow — this failure won't affect workflow result
-    }
+    
+  const uuidFromProcessedData = payload.uuid; // Replace with real uuid
+  const status = "success"; // or "failed"
+ 
+await sendDocketStatus(uuidFromProcessedData, status)
+    .catch(err => {
+      console.error("Failed to send Kafka message:", err);
+    });
   }
-
-  logStep("🏁 Workflow completed successfully");
 
   return {
     status: "OK",
-    inferenceData,
-    buildData,
-    evalData,
-    jobStatus,
+    inferenceData: inferenceData,
+    buildData: buildData,
+    evalData: evalData,
+    jobStatus: jobStatus,
   };
 }
