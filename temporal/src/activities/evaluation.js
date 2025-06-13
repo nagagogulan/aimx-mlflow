@@ -1001,21 +1001,35 @@ function loadPatchedMinikubeConfig() {
  */
 export async function cleanMinikubeDockerResources() {
   try {
-    console.log("🔌 [cleanup] Running cleanup via Minikube SSH...");
+    console.log("🔌 [cleanup] Connecting to Minikube Docker via Dockerode...");
 
-    // Step 1: Log existing containers
-    await runCommand(`minikube ssh -- docker ps -a`);
+    // Connect to Docker inside Minikube via SSH tunneling (use TCP socket exposed from host)
+    const docker = new Docker({
+      host: "192.168.49.2",
+      port: 2376, // 👈 you MUST expose this from Minikube as a TCP port (see below)
+      protocol: "http", // or "https" if TLS is used
+    });
 
-    // Step 2: Stop & remove containers using the image
-    await runCommand(`minikube ssh -- docker rm -f $(docker ps -aq --filter ancestor=nagagogulan/aimx-evaluation:latest) || true`);
+    // List containers by image
+    const containers = await docker.listContainers({ all: true });
+    const aimxContainers = containers.filter(c =>
+      c.Image === "nagagogulan/aimx-evaluation:latest"
+    );
 
-    // Step 3: Remove the image itself
-    await runCommand(`minikube ssh -- docker rmi -f nagagogulan/aimx-evaluation:latest || true`);
+    for (const containerInfo of aimxContainers) {
+      const container = docker.getContainer(containerInfo.Id);
+      await container.remove({ force: true });
+      console.log(`🗑️ Removed container ${containerInfo.Id}`);
+    }
 
-    console.log("🚮 [cleanup] Minikube Docker cleanup complete (containers + image)");
+    // Remove the image
+    const image = docker.getImage("nagagogulan/aimx-evaluation:latest");
+    await image.remove({ force: true });
+    console.log("🗑️ Removed image 'nagagogulan/aimx-evaluation:latest'");
 
   } catch (err) {
-    console.error(`❌ [cleanup] Failed during Minikube SSH cleanup: ${err.message}`);
+    console.error(`❌ [cleanup] Failed to clean Minikube Docker resources: ${err.message}`);
     throw err;
   }
 }
+
