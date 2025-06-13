@@ -344,7 +344,7 @@ export async function buildDockerImage(options) {
     await runCommand("docker rmi -f nagagogulan/aimx-evaluation:latest || true", dir);
 
     // Step 2: Build the Docker image
-    await runCommand("docker build -t aimx-evaluation .", dir);
+    await runCommand("docker build --no-cache -t aimx-evaluation .", dir);
     console.log(`✅ Docker image built in ${dir}`);
 
      // Step 3: Log current containers
