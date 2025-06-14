@@ -738,7 +738,7 @@ const generateRandomString = (length = 4) => {
   
 // }
 
-export async function sendDocketStatus(uuid, status) {
+export async function sendDocketStatus(uuid, status, metrics) {
   const broker = "54.251.96.179:9092";
   const topic = "docket-status";
 
@@ -753,7 +753,8 @@ export async function sendDocketStatus(uuid, status) {
 
     const message = {
       uuid,
-      status
+      status,
+      metrics
     };
 
     await producer.send({
