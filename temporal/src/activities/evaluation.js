@@ -9,8 +9,9 @@ import * as allfunction from "../kafka/worker.js" ;
 import fs from 'fs';
 import https from 'https';
 import yaml from 'js-yaml';
-import Docker from "dockerode";
+import axios from "axios";
 
+const MLFLOW_API_BASE = "http://54.251.96.179:5000/api/2.0/mlflow";
 const projectRoot = "/app"; // ✅ Container-based 
 console.log('PROJECT ROOT:', projectRoot);
 
@@ -608,7 +609,7 @@ function getContainerEnvConfig(options, inferenceData) {
     { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
     { name: "DATASET_PATH", value: inferenceData.datasetPath },
-    { name: "EXPERIMENT_NAME", value: options.experimentName || "Microsoft-Security-Incident-Prediction" },
+    { name: "EXPERIMENT_NAME", value: options.uuid || "Microsoft-Security-Incident-Prediction" },
     { name: "TARGET_COLUMN", value: "IncidentGrade"}
   ];
 
@@ -629,7 +630,7 @@ function getContainerEnvConfig(options, inferenceData) {
   return [{
     name: "aimx-evaluation",
     image: "nagagogulan/aimx-evaluation:latest",
-    imagePullPolicy: "IfNotPresent",
+    imagePullPolicy: "always",
     env: baseEnv,
     workingDir: "/app"
   }];
@@ -674,179 +675,6 @@ export async function waitForJobCompletion(
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
 }
-
-// export async function waitForJobCompletion(
-//   jobName,
-//   namespace,
-//   timeoutMs = 6000000, // 10 minutes
-//   pollInterval = 50000  // 5 seconds
-// ) {
-//   console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
-
-//   const kc = new k8s.KubeConfig();
-//   const start = Date.now();
-
-//   try {
-//     kc.loadFromFile(loadPatchedMinikubeConfig());
-//     const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
-
-//     while (true) {
-//       try {
-//         const jobResp = await k8sBatchApi.readNamespacedJob({ name: jobName, namespace });
-//         const jobStatus = jobResp.body?.status;
-
-//         console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
-
-//         if (jobStatus?.succeeded === 1) {
-//           console.log(`✅ [Success] Job '${jobName}' completed successfully.`);
-//           return true;
-//         }
-
-//         if (jobStatus?.failed && jobStatus.failed > 0) {
-//           console.error(`❌ [Failure] Job '${jobName}' failed with ${jobStatus.failed} attempt(s).`);
-//           throw new Error(`Job '${jobName}' failed with ${jobStatus.failed} failures.`);
-//         }
-
-//       } catch (apiErr) {
-//         const statusCode = apiErr?.response?.statusCode;
-//         const rawBody = apiErr?.response?.body;
-
-//         if (statusCode === 404) {
-//           console.warn(`⚠️ [NotFound] Job '${jobName}' not found. It may not be created yet or was deleted.`);
-//         } else {
-//           console.error(`❌ [API Error] Failed to fetch job status. Code=${statusCode}`);
-//           if (rawBody) {
-//             try {
-//               const parsed = JSON.parse(rawBody);
-//               console.error(`📄 [ErrorBody]: ${JSON.stringify(parsed, null, 2)}`);
-//             } catch {
-//               console.error(`📄 [RawBody]: ${rawBody}`);
-//             }
-//           }
-//           throw apiErr;
-//         }
-//       }
-
-//       if (Date.now() - start > timeoutMs) {
-//         console.error(`⏰ [Timeout] Gave up waiting after ${timeoutMs / 1000} seconds.`);
-//         throw new Error(`Timeout while waiting for job '${jobName}' to complete.`);
-//       }
-
-//       await new Promise((resolve) => setTimeout(resolve, pollInterval));
-//     }
-
-//   } catch (error) {
-//     console.error(`❌ [Fatal] waitForJobCompletion crashed: ${error.message}`);
-//     throw error;
-//   }
-// }
-
-
-// const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
-//   return new Promise((resolve, reject) => {
-//     console.log(`🔹 Executing: ${cmd} (in ${cwd})`); // Log command & directory
-//     exec(cmd, { cwd: cwd }, (error, stdout, stderr) => {
-//       if (error) {
-//         console.error(`❌ Command failed: ${cmd}\nError: ${error.message}`);
-//         console.error(`Stderr:\n${stderr}`);
-//         reject(new Error(stderr || error.message));
-//         return;
-//       }
-//       console.log(`✅ Command succeeded:\n${stdout}`);
-//       resolve(stdout.trim()); // Trim output for cleaner logs
-//     });
-//   });
-// };
-
-
-// export async function waitForJobCompletion(
-//   jobName,
-//   namespace,
-//   timeoutMs = 600000, // 10 minutes
-//   pollInterval = 5000 // 5 seconds
-// ) {
-//   jobName = jobName?.trim();
-//   namespace = namespace?.trim();
-
-//   if (!jobName || !namespace) {
-//     throw new Error(`[waitForJobCompletion] Missing jobName or namespace. jobName='${jobName}', namespace='${namespace}'`);
-//   }
-
-//   console.log(`⏳ [waitForJobCompletion] Monitoring job: '${jobName}' in namespace: '${namespace}'`);
-
-//   const kc = new k8s.KubeConfig();
-//   kc.loadFromFile(loadPatchedMinikubeConfig());
-
-//   const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
-//   const k8sCoreApi = kc.makeApiClient(k8s.CoreV1Api);
-//   const start = Date.now();
-
-//   while (true) {
-//     try {
-//       const jobResp = await k8sBatchApi.readNamespacedJob(jobName, namespace); // ✅ POSITIONS
-//       const jobStatus = jobResp.body?.status;
-
-//       console.log(`🔍 [Status] job=${jobName}, succeeded=${jobStatus?.succeeded || 0}, failed=${jobStatus?.failed || 0}`);
-
-//       if (jobStatus?.succeeded === 1) {
-//         console.log(`✅ Job '${jobName}' completed successfully.`);
-//       } else {
-//         const podList = await k8sCoreApi.listNamespacedPod(
-//           namespace,
-//           undefined,
-//           undefined,
-//           undefined,
-//           undefined,
-//           `job-name=${jobName}`
-//         );
-
-//         const pod = podList.body.items[0];
-//         const podPhase = pod?.status?.phase;
-
-//         if (podPhase === "Succeeded") {
-//           console.log(`✅ [Pod Success] Pod '${pod.metadata.name}' has phase: ${podPhase}`);
-//         } else {
-//           console.log(`⏳ [Pod Phase] '${pod?.metadata?.name}' is '${podPhase}'`);
-//           if (Date.now() - start > timeoutMs) {
-//             throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
-//           }
-//           await new Promise((res) => setTimeout(res, pollInterval));
-//           continue;
-//         }
-//       }
-
-//       // Fetch logs
-//       const podList = await k8sCoreApi.listNamespacedPod(namespace, undefined, undefined, undefined, undefined, `job-name=${jobName}`);
-//       const podName = podList.body.items[0]?.metadata?.name;
-
-//       if (podName) {
-//         const logs = await k8sCoreApi.readNamespacedPodLog(podName, namespace);
-//         console.log(`📄 [Pod Logs: ${podName}]:\n${logs.body}`);
-//       } else {
-//         console.warn(`⚠️ No pod logs found.`);
-//       }
-
-//       return true;
-
-//     } catch (err) {
-//       const statusCode = err?.response?.statusCode;
-
-//       if (statusCode === 404) {
-//         console.warn(`⚠️ Job '${jobName}' not found — retrying...`);
-//       } else {
-//         console.error(`❌ API error: ${err.message}`);
-//         throw err;
-//       }
-//     }
-
-//     if (Date.now() - start > timeoutMs) {
-//       throw new Error(`⏰ Timeout while waiting for job '${jobName}' to complete.`);
-//     }
-
-//     await new Promise((res) => setTimeout(res, pollInterval));
-//   }
-// }
-
 
 
 const runCommand = (cmd, cwd = process?.env?.DOCKER_FILE_DIR) => {
@@ -980,41 +808,75 @@ function loadPatchedMinikubeConfig() {
   return tmpPath;
 }
 
-
-/**
- * Set Minikube Docker environment and remove old containers/images
- */
-export async function cleanMinikubeDockerResources() {
+// activities/fetchJobMetrics.ts
+export async function fetchJobMetrics(job){
   try {
-    console.log("🔌 [cleanup] Connecting to Minikube Docker via Dockerode...");
+    const experimentResponse = await getExperimentByName(job.uuid);
 
-    // Connect to Docker inside Minikube via SSH tunneling (use TCP socket exposed from host)
-    const docker = new Docker({
-      host: "192.168.49.2",
-      port: 2376, // 👈 you MUST expose this from Minikube as a TCP port (see below)
-      protocol: "http", // or "https" if TLS is used
-    });
-
-    // List containers by image
-    const containers = await docker.listContainers({ all: true });
-    const aimxContainers = containers.filter(c =>
-      c.Image === "nagagogulan/aimx-evaluation:latest"
-    );
-
-    for (const containerInfo of aimxContainers) {
-      const container = docker.getContainer(containerInfo.Id);
-      await container.remove({ force: true });
-      console.log(`🗑️ Removed container ${containerInfo.Id}`);
+    if (!experimentResponse?.experiment?.experiment_id) {
+      throw new Error("Experiment not found");
     }
 
-    // Remove the image
-    const image = docker.getImage("nagagogulan/aimx-evaluation:latest");
-    await image.remove({ force: true });
-    console.log("🗑️ Removed image 'nagagogulan/aimx-evaluation:latest'");
+    const experimentId = experimentResponse.experiment.experiment_id;
 
-  } catch (err) {
-    console.error(`❌ [cleanup] Failed to clean Minikube Docker resources: ${err.message}`);
-    throw err;
+    const runsData = await fetchMlflowRuns(experimentId);
+    const latestRunId = runsData?.runs?.[0]?.info?.run_id;
+
+    if (!latestRunId) {
+      throw new Error("No MLflow runs found for experiment");
+    }
+
+    const metrics = await getMlflowRunById(latestRunId);
+    return metrics;
+  } catch (error) {
+    console.error(`❌ Failed to fetch metrics for job ${job?.uuid}:`, error?.message || error);
+    throw new Error("Could not fetch MLflow metrics");
+  }
+}
+
+async function getExperimentByName(name) {
+  try {
+    const url = `${MLFLOW_API_BASE}/experiments/get-by-name`;
+    const response = await axios.get(url, {
+      params: { experiment_name: name },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error fetching experiment by name "${name}":`, error?.message || error);
+    throw new Error("Failed to get experiment by name");
+  }
+}
+
+async function fetchMlflowRuns(experimentId) {
+  try {
+    const url = `${MLFLOW_API_BASE}/runs/search`;
+    const response = await axios.post(
+      url,
+      {
+        experiment_ids: [experimentId],
+        max_results: 10,
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error fetching MLflow runs for experiment ${experimentId}:`, error?.message || error);
+    throw new Error("Failed to fetch MLflow runs");
+  }
+}
+
+async function getMlflowRunById(runId) {
+  try {
+    const url = `${MLFLOW_API_BASE}/runs/get`;
+    const response = await axios.get(url, {
+      params: { run_id: runId },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error fetching MLflow run by ID: ${runId}`, error?.message || error);
+    throw new Error(`Failed to fetch run metrics for run ID: ${runId}`);
   }
 }
 
