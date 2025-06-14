@@ -7,7 +7,7 @@ const {
   runEvaluations,
   runEvaluationsInCluster,
   waitForJobCompletion,
-  // fetchJobMetrics,
+  fetchJobMetrics,
   sendDocketStatus,
 } = proxyActivities({
   startToCloseTimeout: "5 minute",
@@ -56,8 +56,7 @@ export async function runEval(payload) {
   if (jobStatus) {
     status = "success";
     try {
-      // metrics = await fetchJobMetrics(payload);
-      metrics="null"
+      metrics = await fetchJobMetrics(payload);
       console.log("📊 Metrics fetched successfully:", JSON.stringify(metrics, null, 2));
     } catch (err) {
       console.error("❌ Failed to fetch metrics:", err?.message || err);
