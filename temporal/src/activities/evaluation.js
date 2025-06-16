@@ -211,7 +211,7 @@ export async function helloWorld(options) {
 export async function copyInferenceScripts(options) {
   const tempId = nanoid();
   console.log(`📥 [copyInferenceScripts] Received options for ID: ${tempId}`);
-  
+
   try {
     const {
       dataType,
@@ -224,14 +224,14 @@ export async function copyInferenceScripts(options) {
       dataLabelUrl,
     } = options;
 
-    if (!modelWeightUrl?.path) {
-      console.error("❌ Missing 'modelWeightUrl.path' in input options");
-      throw new Error("Missing required field: modelWeightUrl.path");
+    if (!modelWeightUrl?.link && !modelWeightUrl?.path) {
+      console.error("Missing 'modelWeightUrl.link' or 'modelWeightUrl.path' in input options");
+      throw new Error("Missing required field: modelWeightUrl.link or modelWeightUrl.path");
     }
 
     const datasetEntry = modelDatasetUrl?.[0];
     if (!datasetEntry?.Value) {
-      console.error("❌ Missing 'modelDatasetUrl[0].Value' in input options");
+      console.error("Missing 'modelDatasetUrl[0].Value' in input options");
       throw new Error("Missing required field: modelDatasetUrl[0].Value");
     }
 
@@ -244,10 +244,14 @@ export async function copyInferenceScripts(options) {
     const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
     const DATASETS_DIR = `${TARGET_DIR}/datasets`;
 
-    const modelFileName = path.basename(modelWeightUrl.path);
+    const modelFileName = modelWeightUrl.link
+      ? path.basename(new URL(modelWeightUrl.link).pathname)
+      : path.basename(modelWeightUrl.path);
     const datasetFileName = path.basename(datasetEntry.Value);
 
-    const modelWeightFullPath = path.resolve(modelWeightUrl.path);
+    const modelWeightFullPath = modelWeightUrl.path
+      ? path.resolve(modelWeightUrl.path)
+      : null;
     const datasetFullPath = path.resolve(datasetEntry.Value);
 
     console.log(`[${tempId}] Creating target directory: ${TARGET_DIR}`);
@@ -262,8 +266,39 @@ export async function copyInferenceScripts(options) {
     console.log(`[${tempId}] Creating weights directory`);
     await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
 
-    console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
-    await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+    if (modelWeightUrl.type === "GIT" && modelWeightUrl.link) {
+      console.log(`[${tempId}] Downloading model weight from GitHub: ${modelWeightUrl.link}`);
+      if (!modelWeightUrl.pat) {
+        throw new Error("GitHub PAT is missing in 'modelWeightUrl.pat'.");
+      }
+
+      const headers = {
+        Authorization: `token ${modelWeightUrl.pat}`,
+        Accept: "application/vnd.github.v3.raw",
+      };
+
+      const response = await axios.get(modelWeightUrl.link, { headers, responseType: "stream" });
+      const modelWeightFilePath = `${MODEL_WEIGHT_DIR}/${modelFileName}`;
+      const writer = fs.createWriteStream(modelWeightFilePath);
+
+      response.data.pipe(writer);
+
+      await new Promise((resolve, reject) => {
+        writer.on("finish", resolve);
+        writer.on("error", reject);
+      });
+
+      console.log(`[${tempId}] Model weight downloaded to: ${modelWeightFilePath}`);
+
+      // Copy the downloaded file to the temporal-runs directory
+      console.log(`[${tempId}] Copying model weight to temporal-runs: ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+      await runCommand(`cp ${modelWeightFilePath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+    } else if (modelWeightUrl.path) {
+      console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
+      await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+    } else {
+      throw new Error("Invalid modelWeightUrl format.");
+    }
 
     console.log(`[${tempId}] Creating datasets directory`);
     await runCommand(`mkdir -p ${DATASETS_DIR}`);
