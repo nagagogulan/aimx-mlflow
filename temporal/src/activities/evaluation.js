@@ -216,7 +216,7 @@ export async function copyInferenceScripts(options) {
     const {
       dataType,
       taskType,
-      modelFramework,
+      modelFramework,                                                                                                                                                                                                                                                                                                                                                                                                                                 
       modelArchitecture,
       modelWeightUrl,
       modelDatasetUrl,
@@ -638,14 +638,27 @@ export async function runEvaluationsInCluster(options, inferenceData) {
   }
 }
 
+function getTargetColumnFromCSV(csvPath) {
+  const absPath = path.resolve(csvPath);
+  console.log(`[getTargetColumnFromCSV] Reading CSV file at: ${absPath}`);
+  const firstLine = fs.readFileSync(absPath, 'utf8').split('\n')[0];
+  console.log(`[getTargetColumnFromCSV] First line (header): ${firstLine}`);
+  const columns = firstLine.split(',').map(col => col.trim());
+  console.log(`[getTargetColumnFromCSV] Columns found: ${columns.join(', ')}`);
+  const targetColumn = columns[columns.length - 1];
+  console.log(`[getTargetColumnFromCSV] Selected target column: ${targetColumn}`);
+  return targetColumn;
+}
+
 function getContainerEnvConfig(options, inferenceData) {
+const targetColumn = getTargetColumnFromCSV(inferenceData.datasetPath);
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
     { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
     { name: "DATASET_PATH", value: inferenceData.datasetPath },
-    { name: "EXPERIMENT_NAME", value: options.uuid || "Microsoft-Security-Incident-Prediction" },
-    { name: "TARGET_COLUMN", value: "IncidentGrade"}
+    { name: "EXPERIMENT_NAME", value: options.uuid },
+    { name: "TARGET_COLUMN", value: targetColumn ? targetColumn : 'target'}
   ];
 
   // if (options.targetColumn) {
