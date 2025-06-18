@@ -64,7 +64,7 @@ with mlflow.start_run():
     #fix for the trace issue and trying to regiter in the model registry
 
     # mlflow.sklearn.log_model(model, artifact_path="model")
-    mlflow.sklearn.log_model(model, artifact_path="model", registered_model_name="RegressionModel")
+    mlflow.sklearn.log_model(model, artifact_path="model")
 
 
     
