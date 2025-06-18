@@ -661,6 +661,7 @@ const targetColumn = getTargetColumnFromCSV(inferenceData.tempReq);
     { name: "EXPERIMENT_NAME", value: options.uuid },
     { name: "TARGET_COLUMN", value: targetColumn ? targetColumn : 'target'}
   ];
+  console.log(`📦 [getContainerEnvConfig] Base environment variables:`, baseEnv);
 
   // if (options.targetColumn) {
   //   baseEnv.push({ name: "TARGET_COLUMN", value: "target"});
