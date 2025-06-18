@@ -59,7 +59,14 @@ with mlflow.start_run():
     mlflow.log_metric("r2", r2)
     
     # Log the model to MLflow
-    mlflow.sklearn.log_model(model, "model")
+    # mlflow.sklearn.log_model(model, "model")
+
+    #fix for the trace issue and trying to regiter in the model registry
+
+    # mlflow.sklearn.log_model(model, artifact_path="model")
+    mlflow.sklearn.log_model(model, artifact_path="model", registered_model_name="RegressionModel")
+
+
     
     # Log model parameters
     model_params = model.get_params()
