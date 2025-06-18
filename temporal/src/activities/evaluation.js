@@ -340,6 +340,7 @@ export async function copyInferenceScripts(options) {
       datasetPath: `./datasets/${datasetFileName}`,
       imageZipPath,
       dataLabelPath,
+      tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`, //toget target column this pat is used
     };
   } catch (err) {
     console.error(`❌ [${tempId}] Failed in copyInferenceScripts:`, err.message);
@@ -651,7 +652,7 @@ function getTargetColumnFromCSV(csvPath) {
 }
 
 function getContainerEnvConfig(options, inferenceData) {
-const targetColumn = getTargetColumnFromCSV(inferenceData.datasetPath);
+const targetColumn = getTargetColumnFromCSV(inferenceData.tempReq);
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
     { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
