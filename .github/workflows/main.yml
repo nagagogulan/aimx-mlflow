@@ -1,0 +1,40 @@
+name: Deploy to EC2 on Development Branch Push
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-251-96-179.ap-southeast-1.compute.amazonaws.com << 'EOF'
+          cd ~/aimx-ml/AIMx-ML/temporal
+
+          echo "Stopping container..."
+          docker stop temporal-aimx_evaluation_worker-1 || true
+
+          echo "Removing container..."
+          docker rm temporal-aimx_evaluation_worker-1 || true
+
+          echo "Removing image..."
+          docker rmi temporal-aimx_evaluation_worker:latest || true
+
+          echo "Pulling latest code (optional, if repo is cloned)..."
+          git pull origin development || true
+
+          echo "Rebuilding and starting app..."
+          docker compose -f compose.yaml up -d --build
+        EOF
