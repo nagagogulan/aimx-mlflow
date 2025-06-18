@@ -7,6 +7,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from dotenv import load_dotenv
 
+
 # Load variables from .env file
 load_dotenv()
 
@@ -52,6 +53,11 @@ r2 = r2_score(y_true, predictions)
 
 # Log metrics to MLflow
 # with mlflow.start_run(run_name="model_evaluation"):
+mlflow.set_tracking_uri(mlflowURI)
+
+# Set the experiment
+mlflow.set_experiment(experiment_name)
+
 with mlflow.start_run():
     mlflow.log_metric("mae", mae)
     mlflow.log_metric("mse", mse)
@@ -64,7 +70,7 @@ with mlflow.start_run():
     #fix for the trace issue and trying to regiter in the model registry
 
     # mlflow.sklearn.log_model(model, artifact_path="model")
-    mlflow.sklearn.log_model(model, artifact_path="model")
+    # mlflow.sklearn.log_model(model, artifact_path="model")
 
 
     
