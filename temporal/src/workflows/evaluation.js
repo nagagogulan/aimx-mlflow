@@ -10,7 +10,7 @@ const {
   fetchJobMetrics,
   sendDocketStatus,
 } = proxyActivities({
-  startToCloseTimeout: "5 minute",
+  startToCloseTimeout: "20 minute",
   retry: {
     initialInterval: "60 second",
     maximumAttempts: 1,
