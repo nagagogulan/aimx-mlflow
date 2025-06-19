@@ -652,7 +652,9 @@ function getTargetColumnFromCSV(csvPath) {
 }
 
 function getContainerEnvConfig(options, inferenceData) {
-const targetColumn = getTargetColumnFromCSV(inferenceData.tempReq);
+  if(!options.modelFramework === "tensorflow"){
+    const targetColumn = getTargetColumnFromCSV(inferenceData.tempReq);
+  }
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
     { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
@@ -663,13 +665,10 @@ const targetColumn = getTargetColumnFromCSV(inferenceData.tempReq);
   ];
   console.log(`📦 [getContainerEnvConfig] Base environment variables:`, baseEnv);
 
-  // if (options.targetColumn) {
-  //   baseEnv.push({ name: "TARGET_COLUMN", value: "target"});
-  // }
-
   if (
     options.dataType === "unstructured" &&
-    options.taskType === "image-classification"
+    options.taskType === "image-classification" &&
+    options.modelFramework === "onnx"
   ) {
     baseEnv.push(
       { name: "IMAGES_ZIP_PATH", value: inferenceData.imageZipPath },
