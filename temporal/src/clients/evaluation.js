@@ -81,6 +81,23 @@ async function run() {
     uuid: uuid,
   };*/
 
+  //  const payload = {
+  //   dataType: "unstructured",
+  //   taskType: "image-classification",
+  //   modelFramework: "tensorflow",
+  //   modelArchitecture: "convolutional-neural-network",
+  //   experimentName: "tensorflow-Image-Classification",
+  //   modelWeightUrl:{
+
+  //     path: "http://localhost:5500/temporal/scripts/unstructured/image-classification/tensorflow/convolutional-neural-network/weights/vgg16_model.h5",
+  //   },
+  //   modelDatasetUrl:[{
+  //     Key:"path",
+  //     Value: "http://localhost:5500/temporal/scripts/unstructured/image-classification/tensorflow/convolutional-neural-network/datasets/test.zip",
+  //   }],
+  //   uuid: uuid,
+  // };
+
   // const payload = {
   //   dataType: "structured",
   //   taskType: "tabular-classification",
