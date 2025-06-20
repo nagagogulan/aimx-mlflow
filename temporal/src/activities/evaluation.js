@@ -463,11 +463,11 @@ function getTargetColumnFromCSV(csvPath) {
   return targetColumn;
 }
 
-function getContainerEnvConfig(options, inferenceData) {
-  // let targetColumn = "target";
-  // if(options.modelFramework !== "tensorflow"){
-    const targetColumn = getTargetColumnFromCSV(inferenceData.tempReq);
-  // }
+async function getContainerEnvConfig(options, inferenceData) {
+  let targetColumn = "target";
+  if(options.modelFramework != "tensorflow"){
+    targetColumn = await getTargetColumnFromCSV(inferenceData.tempReq);
+  }
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
     { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
