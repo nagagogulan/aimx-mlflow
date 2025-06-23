@@ -121,8 +121,13 @@ export async function copyInferenceScripts(options) {
     console.log(`[${tempId}] Copying requirements.txt`);
     await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
 
-    let imageZipPath = null;
-    let dataLabelPath = null;
+    const payload = {
+      tempId,
+      targetDir: TARGET_DIR,
+      weightsPath: `./weights/${modelFileName}`,
+      datasetPath: `./datasets/${datasetFileName}`,
+      tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`, //toget target column this pat is used
+    };
 
     if (
       dataType === "unstructured" &&
@@ -139,21 +144,14 @@ export async function copyInferenceScripts(options) {
       console.log(`[${tempId}] Copying label file: ${dataLabelFileName}`);
       await runCommand(`cp ${DATASETS_DIR}/${dataLabelFileName} ${dataLabelUrl}`);
 
-      imageZipPath = `./datasets/${imageZipFileName}`;
-      dataLabelPath = `./datasets/${dataLabelFileName}`;
+      payload.imageZipPath = `./datasets/${imageZipFileName}`;
+      payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
+      
     }
 
     console.log(`✅ [${tempId}] All files copied successfully.`);
 
-    return {
-      tempId,
-      targetDir: TARGET_DIR,
-      weightsPath: `./weights/${modelFileName}`,
-      datasetPath: `./datasets/${datasetFileName}`,
-      imageZipPath,
-      dataLabelPath,
-      tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`, //toget target column this pat is used
-    };
+    return payload
   } catch (err) {
     console.error(`❌ [${tempId}] Failed in copyInferenceScripts:`, err.message);
     throw err;
@@ -438,8 +436,8 @@ export async function runEvaluationsInCluster(options, inferenceData) {
       }
     };
 
-    // const test = await k8sBatchApi.createNamespacedJob({ namespace, body: jobManifest });
-    const test = await k8sBatchApi.createNamespacedJob(namespace, jobManifest);
+    const test = await k8sBatchApi.createNamespacedJob({ namespace, body: jobManifest });
+    // const test = await k8sBatchApi.createNamespacedJob(namespace, jobManifest);
     console.log("✅ Job response received:", JSON.stringify(test.body || test, null, 2));
 
     console.log(`✅ Kubernetes job '${jobName}' created successfully.`);
