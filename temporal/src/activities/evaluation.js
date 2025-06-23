@@ -438,7 +438,8 @@ export async function runEvaluationsInCluster(options, inferenceData) {
       }
     };
 
-    await k8sBatchApi.createNamespacedJob({ namespace, body: jobManifest });
+    const test = await k8sBatchApi.createNamespacedJob({ namespace, body: jobManifest });
+    console.log("test reicieved ", test)
 
     console.log(`✅ Kubernetes job '${jobName}' created successfully.`);
     return {
