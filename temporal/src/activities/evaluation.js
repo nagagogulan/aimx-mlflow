@@ -395,6 +395,9 @@ export async function runEvaluationsInCluster(options, inferenceData) {
   // await cleanMinikubeDockerResources();
   const randomString = generateRandomString(4).toLowerCase();
   const namespace = process?.env?.NAMESPACE || "default";
+  if (!namespace || typeof namespace !== "string") {
+    throw new Error("❌ Invalid namespace: " + JSON.stringify(namespace));
+  }
   const jobName = `aimx-evaluation-${randomString}`;
 
   try {
@@ -418,7 +421,7 @@ export async function runEvaluationsInCluster(options, inferenceData) {
     k8sBatchApi.basePath = cluster?.server;
     k8sBatchApi.requestOptions = { agent: httpsAgent };
 
-    const containerData = getContainerEnvConfig(options, inferenceData);
+    const containerData = await getContainerEnvConfig(options, inferenceData);
 
     const jobManifest = {
       apiVersion: "batch/v1",
@@ -436,8 +439,7 @@ export async function runEvaluationsInCluster(options, inferenceData) {
       }
     };
 
-    // const test = await k8sBatchApi.createNamespacedJob({ namespace, body: jobManifest });
-    const test = await k8sBatchApi.createNamespacedJob(namespace, jobManifest);
+    const test = await k8sBatchApi.createNamespacedJob({ namespace, body: jobManifest });
     console.log("✅ Job response received:", JSON.stringify(test.body || test, null, 2));
 
     console.log(`✅ Kubernetes job '${jobName}' created successfully.`);
