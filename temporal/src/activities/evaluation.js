@@ -602,7 +602,7 @@ const generateRandomString = (length = 4) => {
   
 // }
 
-export async function sendDocketMessage({ uuid, status, metrics, publishtopic , payload = null }) {
+export async function sendDocketMessage( uuid, status, metrics, publishtopic , payload = null ) {
   if(!uuid || !status || !metrics || !publishtopic) {
     return `Invalid input details: ${uuid} or ${status} or ${metrics} or ${publishtopic}`
   }
