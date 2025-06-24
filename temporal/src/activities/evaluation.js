@@ -603,6 +603,11 @@ const generateRandomString = (length = 4) => {
 // }
 
 export async function sendDocketMessage({ uuid, status, metrics, publishtopic , payload = null }) {
+  if(!uuid || !status || !metrics || !publishtopic) {
+    return `Invalid input details: ${uuid} or ${status} or ${metrics} or ${publishtopic}`
+  }
+
+  console.log("recieved topic looks like:", publishtopic)
   const broker = "54.251.96.179:9092";
   const topic = publishtopic;
   
