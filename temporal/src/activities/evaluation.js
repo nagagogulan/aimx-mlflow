@@ -602,13 +602,10 @@ const generateRandomString = (length = 4) => {
   
 // }
 
-export async function sendDocketMessage({ uuid, status, metrics, publishtopic, payload = null }) {
+export async function sendDocketMessage({ uuid, status, metrics, publishtopic = "", payload = null }) {
   const broker = "54.251.96.179:9092";
   const topic = publishtopic;
   
-  if (!topic || typeof topic !== "string") {
-    throw new Error(`Invalid Kafka topic: ${topic}`);
-  }
 
   try {
     console.log(`📡 [sendDocketMessage] Sending status '${status}' for UUID: ${uuid}`);
