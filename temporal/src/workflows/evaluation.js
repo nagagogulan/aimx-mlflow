@@ -8,7 +8,7 @@ const {
   runEvaluationsInCluster,
   waitForJobCompletion,
   fetchJobMetrics,
-  sendDocketStatus,
+  sendDocketMessage,
 } = proxyActivities({
   startToCloseTimeout: "20 minute",
   retry: {
