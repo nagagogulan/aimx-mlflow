@@ -606,7 +606,10 @@ export async function sendDocketMessage({ uuid, status, metrics, publishtopic , 
   const broker = "54.251.96.179:9092";
   const topic = publishtopic;
   
-
+  if (!topic || typeof topic !== "string" || topic.trim() === "") {
+    throw new Error(`❌ Invalid topic name: '${topic}'`);
+  }
+  
   try {
     console.log(`📡 [sendDocketMessage] Sending status '${status}' for UUID: ${uuid}`);
 
