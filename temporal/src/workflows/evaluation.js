@@ -49,7 +49,7 @@ export async function runEval(payload) {
   //     });
   // }
 
-  const uuid = payload.uuid || "unknown-uuid";
+const uuid = payload.uuid || "unknown-uuid";
   let status = "Failed";
   let metrics = "Nil";
 
@@ -57,6 +57,7 @@ export async function runEval(payload) {
     status = "success";
     try {
       metrics = await fetchJobMetrics(payload);
+       await sendDocketMessage({ uuid, status, metrics,topic:"docket-metrics",payload }); // it is for internal collabarater view success dockets
       console.log("📊 Metrics fetched successfully:", JSON.stringify(metrics, null, 2));
     } catch (err) {
       console.error("❌ Failed to fetch metrics:", err?.message || err);
@@ -65,7 +66,7 @@ export async function runEval(payload) {
   }
 
   try {
-    await sendDocketStatus(uuid, status, metrics);
+     await sendDocketMessage({ uuid, status, metrics,topic:"docket-status"}); // it is for send metrics
     console.log(`📬 Docket status sent: uuid=${uuid}, status=${status}`);
   } catch (err) {
     console.error("❌ Failed to send Kafka message:", err?.message || err);

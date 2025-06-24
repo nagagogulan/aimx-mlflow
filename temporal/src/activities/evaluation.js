@@ -602,12 +602,12 @@ const generateRandomString = (length = 4) => {
   
 // }
 
-export async function sendDocketStatus(uuid, status, metrics) {
+export async function sendDocketMessage({ uuid, status, metrics,publishtopic,payload = null }) {
   const broker = "54.251.96.179:9092";
-  const topic = "docket-status";
+  const topic = publishtopic;
 
   try {
-    console.log(`📡 [sendDocketStatus] Sending status '${status}' for UUID: ${uuid}`);
+    console.log(`📡 [sendDocketMessage] Sending status '${status}' for UUID: ${uuid}`);
 
     await allfunction.createTopicIfNotExists(broker, topic);
 
@@ -621,18 +621,22 @@ export async function sendDocketStatus(uuid, status, metrics) {
       metrics
     };
 
+    if (payload) {
+      message.payload = payload;
+    }
+
     await producer.send({
       topic,
       messages: [{
         key: uuid,
-        value: JSON.stringify(message)
+        value: JSON.stringify(message),
       }]
     });
 
-    console.log(`✅ [sendDocketStatus] Message sent to topic '${topic}':`, message);
+    console.log(`✅ [sendDocketMessage] Message sent to topic '${topic}':`, message);
     await producer.disconnect();
   } catch (error) {
-    console.error(`❌ [sendDocketStatus] Failed to send Kafka message: ${error.message}`);
+    console.error(`❌ [sendDocketMessage] Failed to send Kafka message: ${error.message}`);
     throw error;
   }
 }
