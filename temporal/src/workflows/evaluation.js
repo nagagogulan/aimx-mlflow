@@ -57,7 +57,8 @@ const uuid = payload.uuid || "unknown-uuid";
     status = "success";
     try {
       metrics = await fetchJobMetrics(payload);
-       await sendDocketMessage({ uuid, status, metrics,topic:"docket-metrics",payload }); // it is for internal collabarater view success dockets
+      const topic="docket-metrics" 
+       await sendDocketMessage({ uuid, status, metrics,topic,payload }); // it is for internal collabarater view success dockets
       console.log("📊 Metrics fetched successfully:", JSON.stringify(metrics, null, 2));
     } catch (err) {
       console.error("❌ Failed to fetch metrics:", err?.message || err);
@@ -66,7 +67,8 @@ const uuid = payload.uuid || "unknown-uuid";
   }
 
   try {
-     await sendDocketMessage({ uuid, status, metrics,topic:"docket-status"}); // it is for send metrics
+    const topic="docket-status" 
+     await sendDocketMessage({ uuid, status, metrics,topic}); // it is for send metrics
     console.log(`📬 Docket status sent: uuid=${uuid}, status=${status}`);
   } catch (err) {
     console.error("❌ Failed to send Kafka message:", err?.message || err);
