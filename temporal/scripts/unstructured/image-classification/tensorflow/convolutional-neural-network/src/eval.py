@@ -26,6 +26,10 @@ dataset_zip = os.getenv("DATASET_PATH")
 experiment_name = os.getenv("EXPERIMENT_NAME")
 mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
 
+print(f"Using experiment: {experiment_name}")
+print("MLflow URI:", mlflow_uri)
+print("Experiment Name:", experiment_name)
+
 # Step 1: Validate and Extract Dataset
 extract_dir = "./temp_images"
 if os.path.exists(extract_dir):
@@ -124,15 +128,20 @@ print(classification_report(y_true, y_pred, target_names=class_names, zero_divis
 mlflow.set_tracking_uri(mlflow_uri)
 mlflow.set_experiment(experiment_name)
 
-with mlflow.start_run():
-    mlflow.log_param("model_path", model_path)
-    mlflow.log_param("dataset_zip", dataset_zip)
-    mlflow.log_metric("accuracy", acc)
-    mlflow.log_metric("precision", prec)
-    mlflow.log_metric("recall", rec)
-    mlflow.log_metric("f1_score", f1)
-    mlflow.log_metric("log_loss", logloss)
-    print("\n✅ Metrics logged to MLflow.")
+try:
+    with mlflow.start_run():
+        mlflow.log_param("model_path", model_path)
+        mlflow.log_param("dataset_zip", dataset_zip)
+        mlflow.log_metric("accuracy", acc)
+        mlflow.log_metric("precision", prec)
+        mlflow.log_metric("recall", rec)
+        mlflow.log_metric("f1_score", f1)
+        mlflow.log_metric("log_loss", logloss)
+        print("\n✅ Metrics logged to MLflow.")
+except Exception as e:
+    print(f"❌ MLflow logging failed: {e}")
+
+print("🎉 Script completed successfully.")
 
 # Cleanup
 shutil.rmtree(extract_dir)
