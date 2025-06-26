@@ -105,12 +105,107 @@ export async function copyInferenceScripts(options) {
       // Copy the downloaded file to the temporal-runs directory
       console.log(`[${tempId}] Copying model weight to temporal-runs: ${MODEL_WEIGHT_DIR}/${modelFileName}`);
       await runCommand(`cp ${modelWeightFilePath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-    } else if (modelWeightUrl.path) {
+    // } else if (modelWeightUrl.path) {
+    //   console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
+    //   await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+    //   // If the file is a zip, extract and organize contents
+    //   if (modelFileName.endsWith('.zip')) {
+    //     const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
+    //     console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
+    //     await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
+    //     await runCommand(`unzip -o ${MODEL_WEIGHT_DIR}/${modelFileName} -d ${TEMP_UNZIP_DIR}`);
+    //     const files = fs.readdirSync(TEMP_UNZIP_DIR);
+    //     // Move all .txt files as requirements.txt (if multiple, log and move all)
+    //     const txtFiles = files.filter(f => f.endsWith('.txt'));
+    //     if (txtFiles.length > 0) {
+    //       for (const txtFile of txtFiles) {
+    //         console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
+    //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
+    //       }
+    //     } else {
+    //       console.log(`[${tempId}] No .txt requirements file found in zip.`);
+    //     }
+    //     // Move all .py files to src/ as evaluation scripts
+    //     const srcDir = `${TARGET_DIR}/src`;
+    //     await runCommand(`mkdir -p ${srcDir}`);
+    //     const pyFiles = files.filter(f => f.endsWith('.py'));
+    //     if (pyFiles.length > 0) {
+    //       for (const pyFile of pyFiles) {
+    //         console.log(`[${tempId}] Moving evaluation script (${pyFile}) to src/ folder.`);
+    //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${pyFile} ${srcDir}/${pyFile}`);
+    //       }
+    //     } else {
+    //       console.log(`[${tempId}] No Python evaluation script found in zip.`);
+    //     }
+    //     // Move any other file as the model file to weights/
+    //     const handled = new Set([...txtFiles, ...pyFiles]);
+    //     const otherFiles = files.filter(f => !handled.has(f));
+    //     if (otherFiles.length > 0) {
+    //       for (const otherFile of otherFiles) {
+    //         console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
+    //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
+    //       }
+    //     } else {
+    //       console.log(`[${tempId}] No model file found in zip (non .py/.txt).`);
+    //     }
+    //     // Clean up unzip dir
+    //     console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
+    //     await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
+    //   }
+    // } else {
+    //   throw new Error("Invalid modelWeightUrl format.");
+    // }
+     } else if (modelWeightUrl.path) {
       console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
       await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+      // If the file is a zip, extract and organize contents
+      if (modelFileName.endsWith('.zip')) {
+        const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
+        console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
+        await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
+        await runCommand(`unzip -o ${MODEL_WEIGHT_DIR}/${modelFileName} -d ${TEMP_UNZIP_DIR}`);
+        const files = fs.readdirSync(TEMP_UNZIP_DIR);
+        // Move all .txt files as requirements.txt (if multiple, log and move all)
+        const txtFiles = files.filter(f => f.endsWith('.txt'));
+        if (txtFiles.length > 0) {
+          for (const txtFile of txtFiles) {
+            console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
+            await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
+          }
+        } else {
+          console.log(`[${tempId}] No .txt requirements file found in zip.`);
+        }
+        // Move all .py files to src/ as evaluation scripts
+        const srcDir = `${TARGET_DIR}/src`;
+        await runCommand(`mkdir -p ${srcDir}`);
+        const pyFiles = files.filter(f => f.endsWith('.py'));
+        if (pyFiles.length > 0) {
+          for (const pyFile of pyFiles) {
+            console.log(`[${tempId}] Moving evaluation script (${pyFile}) to src/ folder.`);
+            await runCommand(`mv ${TEMP_UNZIP_DIR}/${pyFile} ${srcDir}/${pyFile}`);
+          }
+        } else {
+          console.log(`[${tempId}] No Python evaluation script found in zip.`);
+        }
+        // Move any other file as the model file to weights/
+        const handled = new Set([...txtFiles, ...pyFiles]);
+        const otherFiles = files.filter(f => !handled.has(f));
+        if (otherFiles.length > 0) {
+          for (const otherFile of otherFiles) {
+            console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
+            await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
+          }
+        } else {
+          console.log(`[${tempId}] No model file found in zip (non .py/.txt).`);
+        }
+        // Clean up unzip dir
+        console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
+        await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
+      }
     } else {
       throw new Error("Invalid modelWeightUrl format.");
     }
+
 
     console.log(`[${tempId}] Creating datasets directory`);
     await runCommand(`mkdir -p ${DATASETS_DIR}`);
