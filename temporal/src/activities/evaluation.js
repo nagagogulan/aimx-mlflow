@@ -11,6 +11,7 @@ import https from 'https';
 import yaml from 'js-yaml';
 import axios from "axios";
 import { promises as fsp } from 'fs';
+import path from 'path';
 
 
 const MLFLOW_API_BASE = "http://54.251.96.179:5000/api/2.0/mlflow";
@@ -268,6 +269,7 @@ export async function helloWorld(options) {
 //   return "Docker image built successfully!";
 // }
 
+
 export async function copyInferenceScripts(options) {
   const tempId = nanoid();
   console.log(`📥 [copyInferenceScripts] Received options for ID: ${tempId}`);
@@ -324,42 +326,31 @@ export async function copyInferenceScripts(options) {
         .on('error', reject);
     });
 
-    const files = await fsp.readdir(TEMP_UNZIP_DIR);
+    // Recursively find all files in unzip dir
+    const files = glob.sync(`${TEMP_UNZIP_DIR}/**/*`, { nodir: true });
 
-    const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
-    const txtFiles = files.filter(f => f.endsWith('.txt'));
-    const modelFiles = files.filter(f => f.endsWith('.pkl') || f.endsWith('.onnx') || f.endsWith('.pt') || f.endsWith('.bin'));
+    for (const filePath of files) {
+      const fileName = path.basename(filePath);
 
-    // Move evaluation scripts
-    for (const file of evalFiles) {
-      console.log(`[${tempId}] Moving eval file: ${file}`);
-      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${SRC_DIR}/${file}`);
+      if (fileName.endsWith('.py') || fileName.endsWith('.ipynb')) {
+        console.log(`[${tempId}] Moving eval file: ${fileName}`);
+        await runCommand(`mv "${filePath}" ${SRC_DIR}/${fileName}`);
+      } else if (fileName.endsWith('.txt')) {
+        console.log(`[${tempId}] Moving requirements file: ${fileName}`);
+        await runCommand(`mv "${filePath}" ${TARGET_DIR}/${fileName}`);
+      } else if (fileName.match(/\.(pkl|onnx|pt|bin)$/)) {
+        console.log(`[${tempId}] Moving model weight: ${fileName}`);
+        await runCommand(`mv "${filePath}" ${MODEL_WEIGHT_DIR}/${fileName}`);
+      } else {
+        console.log(`[${tempId}] Moving other file: ${fileName}`);
+        await runCommand(`mv "${filePath}" ${MODEL_WEIGHT_DIR}/${fileName}`);
+      }
     }
 
-    // Move requirements
-    for (const file of txtFiles) {
-      console.log(`[${tempId}] Moving requirements file: ${file}`);
-      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${TARGET_DIR}/${file}`);
-    }
-
-    // Move model weights
-    for (const file of modelFiles) {
-      console.log(`[${tempId}] Moving model weight: ${file}`);
-      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${MODEL_WEIGHT_DIR}/${file}`);
-    }
-
-    // Move uncategorized files to weights
-    const handled = new Set([...evalFiles, ...txtFiles, ...modelFiles]);
-    const others = files.filter(f => !handled.has(f));
-    for (const file of others) {
-      console.log(`[${tempId}] Moving uncategorized file: ${file}`);
-      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${MODEL_WEIGHT_DIR}/${file}`);
-    }
-
-    // Clean up unzip directory
+    // Clean up unzip folder
     await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
 
-    // Copy dataset
+    // Copy dataset file
     console.log(`[${tempId}] Copying dataset: ${datasetFileName}`);
     await runCommand(`cp ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`);
 
@@ -371,7 +362,7 @@ export async function copyInferenceScripts(options) {
       tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`,
     };
 
-    // Optional unstructured image case
+    // Optional image classification flow
     if (
       dataType === "unstructured" &&
       taskType === "image-classification" &&
@@ -388,14 +379,15 @@ export async function copyInferenceScripts(options) {
       payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
     }
 
-    console.log(`✅ [${tempId}] Inference setup completed successfully.`);
+    console.log(`✅ [${tempId}] Inference preparation complete.`);
     return payload;
 
   } catch (err) {
-    console.error(`❌ [${tempId}] Failed in copyInferenceScripts:`, err.message);
+    console.error(`❌ [${tempId}] Error in copyInferenceScripts:`, err.message);
     throw err;
   }
 }
+
 
 
 export async function buildDockerImage(options) {
