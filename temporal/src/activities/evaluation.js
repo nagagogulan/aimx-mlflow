@@ -22,236 +22,236 @@ export async function helloWorld(options) {
 }
 
 
-export async function copyInferenceScripts(options) {
-  const tempId = nanoid();
-  console.log(`📥 [copyInferenceScripts] Received options for ID: ${tempId}`);
+// export async function copyInferenceScripts(options) {
+//   const tempId = nanoid();
+//   console.log(`📥 [copyInferenceScripts] Received options for ID: ${tempId}`);
 
-  try {
-    const {
-      dataType,
-      taskType,
-      modelFramework,                                                                                                                                                                                                                                                                                                                                                                                                                                 
-      modelArchitecture,
-      modelWeightUrl,
-      modelDatasetUrl,
-      imageZipUrl,
-      dataLabelUrl,
-    } = options;
+//   try {
+//     const {
+//       dataType,
+//       taskType,
+//       modelFramework,                                                                                                                                                                                                                                                                                                                                                                                                                                 
+//       modelArchitecture,
+//       modelWeightUrl,
+//       modelDatasetUrl,
+//       imageZipUrl,
+//       dataLabelUrl,
+//     } = options;
 
-    if (!modelWeightUrl?.link && !modelWeightUrl?.path) {
-      console.error("Missing 'modelWeightUrl.link' or 'modelWeightUrl.path' in input options");
-      throw new Error("Missing required field: modelWeightUrl.link or modelWeightUrl.path");
-    }
+//     if (!modelWeightUrl?.link && !modelWeightUrl?.path) {
+//       console.error("Missing 'modelWeightUrl.link' or 'modelWeightUrl.path' in input options");
+//       throw new Error("Missing required field: modelWeightUrl.link or modelWeightUrl.path");
+//     }
 
-    const datasetEntry = modelDatasetUrl?.[0];
-    if (!datasetEntry?.Value) {
-      console.error("Missing 'modelDatasetUrl[0].Value' in input options");
-      throw new Error("Missing required field: modelDatasetUrl[0].Value");
-    }
+//     const datasetEntry = modelDatasetUrl?.[0];
+//     if (!datasetEntry?.Value) {
+//       console.error("Missing 'modelDatasetUrl[0].Value' in input options");
+//       throw new Error("Missing required field: modelDatasetUrl[0].Value");
+//     }
 
-    const INFERENCE_BASE_DIR = `${projectRoot}/scripts/${dataType}/${taskType}/${modelFramework}/${modelArchitecture}`;
-    const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
-    const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
-    const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
+//     const INFERENCE_BASE_DIR = `${projectRoot}/scripts/${dataType}/${taskType}/${modelFramework}/${modelArchitecture}`;
+//     const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
+//     const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
+//     const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
 
-    const TARGET_DIR = `${projectRoot}/temporal-runs/${tempId}`;
-    const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
-    const DATASETS_DIR = `${TARGET_DIR}/datasets`;
+//     const TARGET_DIR = `${projectRoot}/temporal-runs/${tempId}`;
+//     const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
+//     const DATASETS_DIR = `${TARGET_DIR}/datasets`;
 
-    const modelFileName = modelWeightUrl.link
-      ? path.basename(new URL(modelWeightUrl.link).pathname)
-      : path.basename(modelWeightUrl.path);
-    const datasetFileName = path.basename(datasetEntry.Value);
+//     const modelFileName = modelWeightUrl.link
+//       ? path.basename(new URL(modelWeightUrl.link).pathname)
+//       : path.basename(modelWeightUrl.path);
+//     const datasetFileName = path.basename(datasetEntry.Value);
 
-    const modelWeightFullPath = modelWeightUrl.path
-      ? path.resolve(modelWeightUrl.path)
-      : null;
-    const datasetFullPath = path.resolve(datasetEntry.Value);
+//     const modelWeightFullPath = modelWeightUrl.path
+//       ? path.resolve(modelWeightUrl.path)
+//       : null;
+//     const datasetFullPath = path.resolve(datasetEntry.Value);
 
-    console.log(`[${tempId}] Creating target directory: ${TARGET_DIR}`);
-    await runCommand(`mkdir -p ${TARGET_DIR}`);
+//     console.log(`[${tempId}] Creating target directory: ${TARGET_DIR}`);
+//     await runCommand(`mkdir -p ${TARGET_DIR}`);
 
-    console.log(`[${tempId}] Copying inference scripts from ${INFERENCE_SCRIPT_PATH}`);
-    await runCommand(`cp -r ${INFERENCE_SCRIPT_PATH} ${TARGET_DIR}`);
+//     console.log(`[${tempId}] Copying inference scripts from ${INFERENCE_SCRIPT_PATH}`);
+//     await runCommand(`cp -r ${INFERENCE_SCRIPT_PATH} ${TARGET_DIR}`);
 
-    console.log(`[${tempId}] Copying Dockerfile`);
-    await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
+//     console.log(`[${tempId}] Copying Dockerfile`);
+//     await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
 
-    console.log(`[${tempId}] Creating weights directory`);
-    await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
+//     console.log(`[${tempId}] Creating weights directory`);
+//     await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
 
-    if (modelWeightUrl.type === "GIT" && modelWeightUrl.link) {
-      console.log(`[${tempId}] Downloading model weight from GitHub: ${modelWeightUrl.link}`);
-      if (!modelWeightUrl.pat) {
-        throw new Error("GitHub PAT is missing in 'modelWeightUrl.pat'.");
-      }
+//     if (modelWeightUrl.type === "GIT" && modelWeightUrl.link) {
+//       console.log(`[${tempId}] Downloading model weight from GitHub: ${modelWeightUrl.link}`);
+//       if (!modelWeightUrl.pat) {
+//         throw new Error("GitHub PAT is missing in 'modelWeightUrl.pat'.");
+//       }
 
-      const headers = {
-        Authorization: `token ${modelWeightUrl.pat}`,
-        Accept: "application/vnd.github.v3.raw",
-      };
+//       const headers = {
+//         Authorization: `token ${modelWeightUrl.pat}`,
+//         Accept: "application/vnd.github.v3.raw",
+//       };
 
-      const response = await axios.get(modelWeightUrl.link, { headers, responseType: "stream" });
-      const modelWeightFilePath = `${MODEL_WEIGHT_DIR}/${modelFileName}`;
-      const writer = fs.createWriteStream(modelWeightFilePath);
+//       const response = await axios.get(modelWeightUrl.link, { headers, responseType: "stream" });
+//       const modelWeightFilePath = `${MODEL_WEIGHT_DIR}/${modelFileName}`;
+//       const writer = fs.createWriteStream(modelWeightFilePath);
 
-      response.data.pipe(writer);
+//       response.data.pipe(writer);
 
-      await new Promise((resolve, reject) => {
-        writer.on("finish", resolve);
-        writer.on("error", reject);
-      });
+//       await new Promise((resolve, reject) => {
+//         writer.on("finish", resolve);
+//         writer.on("error", reject);
+//       });
 
-      console.log(`[${tempId}] Model weight downloaded to: ${modelWeightFilePath}`);
+//       console.log(`[${tempId}] Model weight downloaded to: ${modelWeightFilePath}`);
 
-      // Copy the downloaded file to the temporal-runs directory
-      console.log(`[${tempId}] Copying model weight to temporal-runs: ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-      await runCommand(`cp ${modelWeightFilePath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-    // } else if (modelWeightUrl.path) {
-    //   console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
-    //   await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-    //   // If the file is a zip, extract and organize contents
-    //   if (modelFileName.endsWith('.zip')) {
-    //     const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
-    //     console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
-    //     await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
-    //     await runCommand(`unzip -o ${MODEL_WEIGHT_DIR}/${modelFileName} -d ${TEMP_UNZIP_DIR}`);
-    //     const files = fs.readdirSync(TEMP_UNZIP_DIR);
-    //     // Move all .txt files as requirements.txt (if multiple, log and move all)
-    //     const txtFiles = files.filter(f => f.endsWith('.txt'));
-    //     if (txtFiles.length > 0) {
-    //       for (const txtFile of txtFiles) {
-    //         console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
-    //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
-    //       }
-    //     } else {
-    //       console.log(`[${tempId}] No .txt requirements file found in zip.`);
-    //     }
-    //     // Move all .py files to src/ as evaluation scripts
-    //     const srcDir = `${TARGET_DIR}/src`;
-    //     await runCommand(`mkdir -p ${srcDir}`);
-    //     const pyFiles = files.filter(f => f.endsWith('.py'));
-    //     if (pyFiles.length > 0) {
-    //       for (const pyFile of pyFiles) {
-    //         console.log(`[${tempId}] Moving evaluation script (${pyFile}) to src/ folder.`);
-    //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${pyFile} ${srcDir}/${pyFile}`);
-    //       }
-    //     } else {
-    //       console.log(`[${tempId}] No Python evaluation script found in zip.`);
-    //     }
-    //     // Move any other file as the model file to weights/
-    //     const handled = new Set([...txtFiles, ...pyFiles]);
-    //     const otherFiles = files.filter(f => !handled.has(f));
-    //     if (otherFiles.length > 0) {
-    //       for (const otherFile of otherFiles) {
-    //         console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
-    //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
-    //       }
-    //     } else {
-    //       console.log(`[${tempId}] No model file found in zip (non .py/.txt).`);
-    //     }
-    //     // Clean up unzip dir
-    //     console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
-    //     await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
-    //   }
-    // } else {
-    //   throw new Error("Invalid modelWeightUrl format.");
-    // }
-    } else if (modelWeightUrl.path) {
-        console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
-        await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+//       // Copy the downloaded file to the temporal-runs directory
+//       console.log(`[${tempId}] Copying model weight to temporal-runs: ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+//       await runCommand(`cp ${modelWeightFilePath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+//     // } else if (modelWeightUrl.path) {
+//     //   console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
+//     //   await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+//     //   // If the file is a zip, extract and organize contents
+//     //   if (modelFileName.endsWith('.zip')) {
+//     //     const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
+//     //     console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
+//     //     await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
+//     //     await runCommand(`unzip -o ${MODEL_WEIGHT_DIR}/${modelFileName} -d ${TEMP_UNZIP_DIR}`);
+//     //     const files = fs.readdirSync(TEMP_UNZIP_DIR);
+//     //     // Move all .txt files as requirements.txt (if multiple, log and move all)
+//     //     const txtFiles = files.filter(f => f.endsWith('.txt'));
+//     //     if (txtFiles.length > 0) {
+//     //       for (const txtFile of txtFiles) {
+//     //         console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
+//     //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
+//     //       }
+//     //     } else {
+//     //       console.log(`[${tempId}] No .txt requirements file found in zip.`);
+//     //     }
+//     //     // Move all .py files to src/ as evaluation scripts
+//     //     const srcDir = `${TARGET_DIR}/src`;
+//     //     await runCommand(`mkdir -p ${srcDir}`);
+//     //     const pyFiles = files.filter(f => f.endsWith('.py'));
+//     //     if (pyFiles.length > 0) {
+//     //       for (const pyFile of pyFiles) {
+//     //         console.log(`[${tempId}] Moving evaluation script (${pyFile}) to src/ folder.`);
+//     //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${pyFile} ${srcDir}/${pyFile}`);
+//     //       }
+//     //     } else {
+//     //       console.log(`[${tempId}] No Python evaluation script found in zip.`);
+//     //     }
+//     //     // Move any other file as the model file to weights/
+//     //     const handled = new Set([...txtFiles, ...pyFiles]);
+//     //     const otherFiles = files.filter(f => !handled.has(f));
+//     //     if (otherFiles.length > 0) {
+//     //       for (const otherFile of otherFiles) {
+//     //         console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
+//     //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
+//     //       }
+//     //     } else {
+//     //       console.log(`[${tempId}] No model file found in zip (non .py/.txt).`);
+//     //     }
+//     //     // Clean up unzip dir
+//     //     console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
+//     //     await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
+//     //   }
+//     // } else {
+//     //   throw new Error("Invalid modelWeightUrl format.");
+//     // }
+//     } else if (modelWeightUrl.path) {
+//         console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
+//         await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
 
-        if (modelFileName.endsWith('.zip')) {
-          const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
-          console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
-          await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
+//         if (modelFileName.endsWith('.zip')) {
+//           const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
+//           console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
+//           await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
 
-          // Unzip using unzipper
-          await new Promise((resolve, reject) => {
-            fs.createReadStream(`${MODEL_WEIGHT_DIR}/${modelFileName}`)
-              .pipe(unzipper.Extract({ path: TEMP_UNZIP_DIR }))
-              .on('close', resolve)
-              .on('error', reject);
-          });
+//           // Unzip using unzipper
+//           await new Promise((resolve, reject) => {
+//             fs.createReadStream(`${MODEL_WEIGHT_DIR}/${modelFileName}`)
+//               .pipe(unzipper.Extract({ path: TEMP_UNZIP_DIR }))
+//               .on('close', resolve)
+//               .on('error', reject);
+//           });
 
-          console.log(`[${tempId}] Successfully unzipped using unzipper`);
+//           console.log(`[${tempId}] Successfully unzipped using unzipper`);
 
-          const files = await fsp.readdir(TEMP_UNZIP_DIR);
-          const srcDir = `${TARGET_DIR}/src`;
-          await runCommand(`mkdir -p ${srcDir}`);
+//           const files = await fsp.readdir(TEMP_UNZIP_DIR);
+//           const srcDir = `${TARGET_DIR}/src`;
+//           await runCommand(`mkdir -p ${srcDir}`);
 
-          const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
-          for (const evalFile of evalFiles) {
-            console.log(`[${tempId}] Moving evaluation script (${evalFile}) to src/ folder.`);
-            await runCommand(`mv ${TEMP_UNZIP_DIR}/${evalFile} ${srcDir}/${evalFile}`);
-          }
+//           const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
+//           for (const evalFile of evalFiles) {
+//             console.log(`[${tempId}] Moving evaluation script (${evalFile}) to src/ folder.`);
+//             await runCommand(`mv ${TEMP_UNZIP_DIR}/${evalFile} ${srcDir}/${evalFile}`);
+//           }
 
-          const txtFiles = files.filter(f => f.endsWith('.txt'));
-          for (const txtFile of txtFiles) {
-            console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
-            await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
-          }
+//           const txtFiles = files.filter(f => f.endsWith('.txt'));
+//           for (const txtFile of txtFiles) {
+//             console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
+//             await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
+//           }
 
-          const handled = new Set([...txtFiles, ...evalFiles]);
-          const otherFiles = files.filter(f => !handled.has(f));
-          for (const otherFile of otherFiles) {
-            console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
-            await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
-          }
+//           const handled = new Set([...txtFiles, ...evalFiles]);
+//           const otherFiles = files.filter(f => !handled.has(f));
+//           for (const otherFile of otherFiles) {
+//             console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
+//             await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
+//           }
 
-          console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
-          await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
-        }
-    } else {
-      throw new Error("Invalid modelWeightUrl format.");
-    }
+//           console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
+//           await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
+//         }
+//     } else {
+//       throw new Error("Invalid modelWeightUrl format.");
+//     }
 
 
-    console.log(`[${tempId}] Creating datasets directory`);
-    await runCommand(`mkdir -p ${DATASETS_DIR}`);
+//     console.log(`[${tempId}] Creating datasets directory`);
+//     await runCommand(`mkdir -p ${DATASETS_DIR}`);
 
-    console.log(`[${tempId}] Copying dataset: ${datasetFileName}`);
-    await runCommand(`cp ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`);
+//     console.log(`[${tempId}] Copying dataset: ${datasetFileName}`);
+//     await runCommand(`cp ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`);
 
-    console.log(`[${tempId}] Copying requirements.txt`);
-    await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
+//     console.log(`[${tempId}] Copying requirements.txt`);
+//     await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
 
-    const payload = {
-      tempId,
-      targetDir: TARGET_DIR,
-      weightsPath: `./weights/${modelFileName}`,
-      datasetPath: `./datasets/${datasetFileName}`,
-      tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`, //toget target column this pat is used
-    };
+//     const payload = {
+//       tempId,
+//       targetDir: TARGET_DIR,
+//       weightsPath: `./weights/${modelFileName}`,
+//       datasetPath: `./datasets/${datasetFileName}`,
+//       tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`, //toget target column this pat is used
+//     };
 
-    if (
-      dataType === "unstructured" &&
-      taskType === "image-classification" &&
-      modelFramework === "onnx" &&
-      modelArchitecture === "resnet"
-    ) {
-      const imageZipFileName = path.basename(new URL(imageZipUrl).pathname);
-      const dataLabelFileName = path.basename(new URL(dataLabelUrl).pathname);
+//     if (
+//       dataType === "unstructured" &&
+//       taskType === "image-classification" &&
+//       modelFramework === "onnx" &&
+//       modelArchitecture === "resnet"
+//     ) {
+//       const imageZipFileName = path.basename(new URL(imageZipUrl).pathname);
+//       const dataLabelFileName = path.basename(new URL(dataLabelUrl).pathname);
 
-      console.log(`[${tempId}] Copying image zip: ${imageZipFileName}`);
-      await runCommand(`cp ${DATASETS_DIR}/${imageZipFileName} ${imageZipUrl}`);
+//       console.log(`[${tempId}] Copying image zip: ${imageZipFileName}`);
+//       await runCommand(`cp ${DATASETS_DIR}/${imageZipFileName} ${imageZipUrl}`);
 
-      console.log(`[${tempId}] Copying label file: ${dataLabelFileName}`);
-      await runCommand(`cp ${DATASETS_DIR}/${dataLabelFileName} ${dataLabelUrl}`);
+//       console.log(`[${tempId}] Copying label file: ${dataLabelFileName}`);
+//       await runCommand(`cp ${DATASETS_DIR}/${dataLabelFileName} ${dataLabelUrl}`);
 
-      payload.imageZipPath = `./datasets/${imageZipFileName}`;
-      payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
+//       payload.imageZipPath = `./datasets/${imageZipFileName}`;
+//       payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
       
-    }
+//     }
 
-    console.log(`✅ [${tempId}] All files copied successfully.`);
+//     console.log(`✅ [${tempId}] All files copied successfully.`);
 
-    return payload
-  } catch (err) {
-    console.error(`❌ [${tempId}] Failed in copyInferenceScripts:`, err.message);
-    throw err;
-  }
-}
+//     return payload
+//   } catch (err) {
+//     console.error(`❌ [${tempId}] Failed in copyInferenceScripts:`, err.message);
+//     throw err;
+//   }
+// }
 
 // export async function buildDockerImage(options) {
 //   console.log(`Building evaluation container from ${options.targetDir}`);
@@ -267,6 +267,136 @@ export async function copyInferenceScripts(options) {
 
 //   return "Docker image built successfully!";
 // }
+
+export async function copyInferenceScripts(options) {
+  const tempId = nanoid();
+  console.log(`📥 [copyInferenceScripts] Received options for ID: ${tempId}`);
+
+  try {
+    const {
+      dataType,
+      taskType,
+      modelFramework,
+      modelArchitecture,
+      modelWeightUrl,
+      modelDatasetUrl,
+      imageZipUrl,
+      dataLabelUrl,
+    } = options;
+
+    const datasetEntry = modelDatasetUrl?.[0];
+    if (!datasetEntry?.Value) {
+      throw new Error("Missing required field: modelDatasetUrl[0].Value");
+    }
+
+    const INFERENCE_BASE_DIR = `${projectRoot}/scripts/`;
+    const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
+
+    const TARGET_DIR = `${projectRoot}/temporal-runs/${tempId}`;
+    const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
+    const SRC_DIR = `${TARGET_DIR}/src`;
+    const DATASETS_DIR = `${TARGET_DIR}/datasets`;
+    const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
+
+    const datasetFileName = path.basename(datasetEntry.Value);
+    const datasetFullPath = path.resolve(datasetEntry.Value);
+
+    const modelZipPath = path.resolve(modelWeightUrl.path);
+    const modelZipFileName = path.basename(modelZipPath);
+
+    // Create necessary directories
+    await runCommand(`mkdir -p ${TARGET_DIR}`);
+    await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
+    await runCommand(`mkdir -p ${SRC_DIR}`);
+    await runCommand(`mkdir -p ${DATASETS_DIR}`);
+    await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
+
+    // Copy Dockerfile
+    console.log(`[${tempId}] Copying Dockerfile from: ${DOCKER_FILE_DIR}`);
+    await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
+
+    // Unzip model ZIP archive
+    console.log(`[${tempId}] Unzipping model archive from: ${modelZipPath}`);
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(modelZipPath)
+        .pipe(unzipper.Extract({ path: TEMP_UNZIP_DIR }))
+        .on('close', resolve)
+        .on('error', reject);
+    });
+
+    const files = await fsp.readdir(TEMP_UNZIP_DIR);
+
+    const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
+    const txtFiles = files.filter(f => f.endsWith('.txt'));
+    const modelFiles = files.filter(f => f.endsWith('.pkl') || f.endsWith('.onnx') || f.endsWith('.pt') || f.endsWith('.bin'));
+
+    // Move evaluation scripts
+    for (const file of evalFiles) {
+      console.log(`[${tempId}] Moving eval file: ${file}`);
+      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${SRC_DIR}/${file}`);
+    }
+
+    // Move requirements
+    for (const file of txtFiles) {
+      console.log(`[${tempId}] Moving requirements file: ${file}`);
+      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${TARGET_DIR}/${file}`);
+    }
+
+    // Move model weights
+    for (const file of modelFiles) {
+      console.log(`[${tempId}] Moving model weight: ${file}`);
+      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${MODEL_WEIGHT_DIR}/${file}`);
+    }
+
+    // Move uncategorized files to weights
+    const handled = new Set([...evalFiles, ...txtFiles, ...modelFiles]);
+    const others = files.filter(f => !handled.has(f));
+    for (const file of others) {
+      console.log(`[${tempId}] Moving uncategorized file: ${file}`);
+      await runCommand(`mv ${TEMP_UNZIP_DIR}/${file} ${MODEL_WEIGHT_DIR}/${file}`);
+    }
+
+    // Clean up unzip directory
+    await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
+
+    // Copy dataset
+    console.log(`[${tempId}] Copying dataset: ${datasetFileName}`);
+    await runCommand(`cp ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`);
+
+    const payload = {
+      tempId,
+      targetDir: TARGET_DIR,
+      weightsPath: `./weights/`,
+      datasetPath: `./datasets/${datasetFileName}`,
+      tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`,
+    };
+
+    // Optional unstructured image case
+    if (
+      dataType === "unstructured" &&
+      taskType === "image-classification" &&
+      modelFramework === "onnx" &&
+      modelArchitecture === "resnet"
+    ) {
+      const imageZipFileName = path.basename(new URL(imageZipUrl).pathname);
+      const dataLabelFileName = path.basename(new URL(dataLabelUrl).pathname);
+
+      await runCommand(`cp ${DATASETS_DIR}/${imageZipFileName} ${imageZipUrl}`);
+      await runCommand(`cp ${DATASETS_DIR}/${dataLabelFileName} ${dataLabelUrl}`);
+
+      payload.imageZipPath = `./datasets/${imageZipFileName}`;
+      payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
+    }
+
+    console.log(`✅ [${tempId}] Inference setup completed successfully.`);
+    return payload;
+
+  } catch (err) {
+    console.error(`❌ [${tempId}] Failed in copyInferenceScripts:`, err.message);
+    throw err;
+  }
+}
+
 
 export async function buildDockerImage(options) {
   const dir = options.targetDir;

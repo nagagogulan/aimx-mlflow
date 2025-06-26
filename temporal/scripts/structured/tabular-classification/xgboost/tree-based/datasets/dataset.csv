@@ -1,4 +1,0 @@
-OrgId,IncidentId,AlertTitle,DetectorId,AlertId,Category,Hour,Time,Day,EntityType,City,IncidentGrade
-500001,9001,InitialAccess,5,801,InitialAccess,10,10:22:00,0,User,New York,BenignPositive
-500002,9002,DefenseEvasion,6,802,Persistence,17,17:48:00,1,Device,London,FalsePositive
-500003,9003,C2Communication,7,803,CommandAndControl,3,03:12:00,2,IP,Singapore,TruePositive

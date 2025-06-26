@@ -1,7 +1,0 @@
-scikit-learn
-onnxruntime
-onnx
-numpy
-pillow
-python-dotenv
-mlflow
