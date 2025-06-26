@@ -317,6 +317,9 @@ export async function copyInferenceScripts(options) {
     console.log(`[${tempId}] Copying Dockerfile from: ${DOCKER_FILE_DIR}`);
     await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
 
+    await runCommand(`cp ${ENTRYPOINT_SH_FILE} ${TARGET_DIR}`);
+    await runCommand(`chmod +x ${TARGET_DIR}/entrypoint.sh`);
+
     // Unzip model ZIP archive
     console.log(`[${tempId}] Unzipping model archive from: ${modelZipPath}`);
     await new Promise((resolve, reject) => {

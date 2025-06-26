@@ -59,5 +59,9 @@ ENV PIP_CACHE_DIR=/root/.cache/pip
 # CMD ["python3", "src/eval.py"]
 
 
-CMD ["python3", "-u", "src/eval.py"]
+# CMD ["python3", "-u", "src/eval.py"]
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+CMD ["./entrypoint.sh"]
+
 
