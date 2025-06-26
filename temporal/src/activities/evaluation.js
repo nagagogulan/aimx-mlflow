@@ -293,6 +293,7 @@ export async function copyInferenceScripts(options) {
 
     const INFERENCE_BASE_DIR = `${projectRoot}/scripts/`;
     const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
+    const ENTRYPOINT_SH_FILE = `${INFERENCE_BASE_DIR}/entrypoint.sh`;
 
     const TARGET_DIR = `${projectRoot}/temporal-runs/${tempId}`;
     const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
