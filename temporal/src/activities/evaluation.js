@@ -165,6 +165,18 @@ export async function copyInferenceScripts(options) {
         await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
         await runCommand(`unzip -o ${MODEL_WEIGHT_DIR}/${modelFileName} -d ${TEMP_UNZIP_DIR}`);
         const files = fs.readdirSync(TEMP_UNZIP_DIR);
+        // Move all .py and .ipynb files to src/ as evaluation scripts
+        const srcDir = `${TARGET_DIR}/src`;
+        await runCommand(`mkdir -p ${srcDir}`);
+        const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
+        if (evalFiles.length > 0) {
+          for (const evalFile of evalFiles) {
+            console.log(`[${tempId}] Moving evaluation script (${evalFile}) to src/ folder.`);
+            await runCommand(`mv ${TEMP_UNZIP_DIR}/${evalFile} ${srcDir}/${evalFile}`);
+          }
+        } else {
+          console.log(`[${tempId}] No Python (.py) or Jupyter (.ipynb) evaluation script found in zip.`);
+        }
         // Move all .txt files as requirements.txt (if multiple, log and move all)
         const txtFiles = files.filter(f => f.endsWith('.txt'));
         if (txtFiles.length > 0) {
@@ -175,20 +187,8 @@ export async function copyInferenceScripts(options) {
         } else {
           console.log(`[${tempId}] No .txt requirements file found in zip.`);
         }
-        // Move all .py files to src/ as evaluation scripts
-        const srcDir = `${TARGET_DIR}/src`;
-        await runCommand(`mkdir -p ${srcDir}`);
-        const pyFiles = files.filter(f => f.endsWith('.py'));
-        if (pyFiles.length > 0) {
-          for (const pyFile of pyFiles) {
-            console.log(`[${tempId}] Moving evaluation script (${pyFile}) to src/ folder.`);
-            await runCommand(`mv ${TEMP_UNZIP_DIR}/${pyFile} ${srcDir}/${pyFile}`);
-          }
-        } else {
-          console.log(`[${tempId}] No Python evaluation script found in zip.`);
-        }
         // Move any other file as the model file to weights/
-        const handled = new Set([...txtFiles, ...pyFiles]);
+        const handled = new Set([...txtFiles, ...evalFiles]);
         const otherFiles = files.filter(f => !handled.has(f));
         if (otherFiles.length > 0) {
           for (const otherFile of otherFiles) {
@@ -196,7 +196,7 @@ export async function copyInferenceScripts(options) {
             await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
           }
         } else {
-          console.log(`[${tempId}] No model file found in zip (non .py/.txt).`);
+          console.log(`[${tempId}] No model file found in zip (non .py/.ipynb/.txt).`);
         }
         // Clean up unzip dir
         console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
