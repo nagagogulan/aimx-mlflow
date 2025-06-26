@@ -3,13 +3,15 @@ import { nanoid } from "nanoid";
 import * as k8s from "@kubernetes/client-node";
 import path from "path";
 // import path from 'path';
-import { fileURLToPath } from 'url';
+import unzipper from 'unzipper';
 import { Kafka } from "kafkajs";
 import * as allfunction from "../kafka/worker.js" ;
 import fs from 'fs';
 import https from 'https';
 import yaml from 'js-yaml';
 import axios from "axios";
+import { promises as fsp } from 'fs';
+
 
 const MLFLOW_API_BASE = "http://54.251.96.179:5000/api/2.0/mlflow";
 const projectRoot = "/app"; // ✅ Container-based 
@@ -155,53 +157,51 @@ export async function copyInferenceScripts(options) {
     // } else {
     //   throw new Error("Invalid modelWeightUrl format.");
     // }
-     } else if (modelWeightUrl.path) {
-      console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
-      await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-      // If the file is a zip, extract and organize contents
-      if (modelFileName.endsWith('.zip')) {
-        const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
-        console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
-        await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
-        await runCommand(`unzip -o ${MODEL_WEIGHT_DIR}/${modelFileName} -d ${TEMP_UNZIP_DIR}`);
-        const files = fs.readdirSync(TEMP_UNZIP_DIR);
-        // Move all .py and .ipynb files to src/ as evaluation scripts
-        const srcDir = `${TARGET_DIR}/src`;
-        await runCommand(`mkdir -p ${srcDir}`);
-        const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
-        if (evalFiles.length > 0) {
+    } else if (modelWeightUrl.path) {
+        console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
+        await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
+
+        if (modelFileName.endsWith('.zip')) {
+          const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
+          console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
+          await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
+
+          // Unzip using unzipper
+          await new Promise((resolve, reject) => {
+            fs.createReadStream(`${MODEL_WEIGHT_DIR}/${modelFileName}`)
+              .pipe(unzipper.Extract({ path: TEMP_UNZIP_DIR }))
+              .on('close', resolve)
+              .on('error', reject);
+          });
+
+          console.log(`[${tempId}] Successfully unzipped using unzipper`);
+
+          const files = await fsp.readdir(TEMP_UNZIP_DIR);
+          const srcDir = `${TARGET_DIR}/src`;
+          await runCommand(`mkdir -p ${srcDir}`);
+
+          const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
           for (const evalFile of evalFiles) {
             console.log(`[${tempId}] Moving evaluation script (${evalFile}) to src/ folder.`);
             await runCommand(`mv ${TEMP_UNZIP_DIR}/${evalFile} ${srcDir}/${evalFile}`);
           }
-        } else {
-          console.log(`[${tempId}] No Python (.py) or Jupyter (.ipynb) evaluation script found in zip.`);
-        }
-        // Move all .txt files as requirements.txt (if multiple, log and move all)
-        const txtFiles = files.filter(f => f.endsWith('.txt'));
-        if (txtFiles.length > 0) {
+
+          const txtFiles = files.filter(f => f.endsWith('.txt'));
           for (const txtFile of txtFiles) {
             console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
             await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
           }
-        } else {
-          console.log(`[${tempId}] No .txt requirements file found in zip.`);
-        }
-        // Move any other file as the model file to weights/
-        const handled = new Set([...txtFiles, ...evalFiles]);
-        const otherFiles = files.filter(f => !handled.has(f));
-        if (otherFiles.length > 0) {
+
+          const handled = new Set([...txtFiles, ...evalFiles]);
+          const otherFiles = files.filter(f => !handled.has(f));
           for (const otherFile of otherFiles) {
             console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
             await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
           }
-        } else {
-          console.log(`[${tempId}] No model file found in zip (non .py/.ipynb/.txt).`);
+
+          console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
+          await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
         }
-        // Clean up unzip dir
-        console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
-        await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
-      }
     } else {
       throw new Error("Invalid modelWeightUrl format.");
     }
