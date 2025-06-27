@@ -330,6 +330,8 @@ export async function copyInferenceScripts(options) {
         .on('error', reject);
     });
 
+    let weightFileName = null;
+
     // Recursively find all files in unzip dir
     const files = glob.sync(`${TEMP_UNZIP_DIR}/**/*`, { nodir: true });
 
@@ -345,6 +347,8 @@ export async function copyInferenceScripts(options) {
       } else if (fileName.match(/\.(pkl|onnx|pt|bin)$/)) {
         console.log(`[${tempId}] Moving model weight: ${fileName}`);
         await runCommand(`mv "${filePath}" ${MODEL_WEIGHT_DIR}/${fileName}`);
+        weightFileName = fileName;
+
       } else {
         console.log(`[${tempId}] Moving other file: ${fileName}`);
         await runCommand(`mv "${filePath}" ${MODEL_WEIGHT_DIR}/${fileName}`);
@@ -361,7 +365,7 @@ export async function copyInferenceScripts(options) {
     const payload = {
       tempId,
       targetDir: TARGET_DIR,
-      weightsPath: `./weights/`,
+  weightsPath: weightFileName ? `./weights/${weightFileName}` : `./weights/`,
       datasetPath: `./datasets/${datasetFileName}`,
       tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`,
     };
