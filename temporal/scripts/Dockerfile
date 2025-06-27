@@ -36,6 +36,9 @@ FROM python:3.9
  
 # Set the working directory
 WORKDIR /app
+
+# Install jq for JSON editing
+RUN apt-get update && apt-get install -y jq
  
 # Copy the requirements file
 COPY requirements.txt .
