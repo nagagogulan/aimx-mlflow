@@ -725,8 +725,6 @@ async function getContainerEnvConfig(options, inferenceData) {
   }];
 }
 
-
-
 export async function waitForJobCompletion(
   jobName,
   namespace,
@@ -939,6 +937,7 @@ async function getExperimentByName(name) {
     const response = await axios.get(url, {
       params: { experiment_name: name },
     });
+    console.log("esponse.data", esponse.data)
     return response.data;
   } catch (error) {
     console.error(`❌ Error fetching experiment by name "${name}":`, error?.message || error);
