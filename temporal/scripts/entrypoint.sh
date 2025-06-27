@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "✅ Registering current environment as user-kernel..."
-python -m ipykernel install --user --name user-kernel --display-name "User Kernel"
-
 PY_SCRIPT=$(find ./src -maxdepth 1 -type f -name "*.py" | head -n 1)
 NB_SCRIPT=$(find ./src -maxdepth 1 -type f -name "*.ipynb" | head -n 1)
 
@@ -13,6 +10,9 @@ if [ -n "$PY_SCRIPT" ]; then
 
 elif [ -n "$NB_SCRIPT" ]; then
   echo "📓 Found Notebook: $NB_SCRIPT"
+
+  echo "✅ Registering current environment as user-kernel..."
+  python -m ipykernel install --user --name user-kernel --display-name "User Kernel"
 
   echo "⚡ Patching kernelspec to use user-kernel..."
   jq '.metadata.kernelspec.name="user-kernel" | .metadata.kernelspec.display_name="User Kernel"' "$NB_SCRIPT" > tmp && mv tmp "$NB_SCRIPT"
