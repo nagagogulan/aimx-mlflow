@@ -697,7 +697,7 @@ async function getContainerEnvConfig(options, inferenceData) {
   }
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
-    { name: "MODEL_WIGHTS_PATH", value: inferenceData.weightsPath },
+    { name: "MODEL_WEIGHTS_PATH", value: inferenceData.weightsPath },
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
     { name: "DATASET_PATH", value: inferenceData.datasetPath },
     { name: "EXPERIMENT_NAME", value: options.uuid },
