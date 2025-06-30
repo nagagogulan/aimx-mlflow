@@ -369,6 +369,16 @@ export async function copyInferenceScripts(options) {
           .on('close', resolve)
           .on('error', reject);
       });
+      // Flatten if needed: check if only one folder was created
+      const unzippedItems = fs.readdirSync(DATASETS_DIR);
+      if (unzippedItems.length === 1) {
+        const singleFolder = path.join(DATASETS_DIR, unzippedItems[0]);
+        if (fs.statSync(singleFolder).isDirectory()) {
+          console.log(`[${tempId}] Flattening extra folder layer: ${singleFolder}`);
+          await runCommand(`mv "${singleFolder}"/* "${DATASETS_DIR}/"`);
+          await runCommand(`rm -rf "${singleFolder}"`);
+        }
+      }
       datasetPayloadPath = './datasets/';
     } else {
       console.log(`[${tempId}] Copying dataset file: ${datasetFileName}`);
