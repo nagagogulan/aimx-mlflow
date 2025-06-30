@@ -344,7 +344,7 @@ export async function copyInferenceScripts(options) {
       } else if (fileName.endsWith('.txt')) {
         console.log(`[${tempId}] Moving requirements file: ${fileName}`);
         await runCommand(`mv "${filePath}" ${TARGET_DIR}/${fileName}`);
-      } else if (fileName.match(/\.(pkl|onnx|pt|bin)$/)) {
+      } else if (fileName.match(/\.(h5|joblib|pkl|onnx|pth|bin)$/)) {
         console.log(`[${tempId}] Moving model weight: ${fileName}`);
         await runCommand(`mv "${filePath}" ${MODEL_WEIGHT_DIR}/${fileName}`);
         weightFileName = fileName;
@@ -371,21 +371,21 @@ export async function copyInferenceScripts(options) {
     };
 
     // Optional image classification flow
-    if (
-      dataType === "unstructured" &&
-      taskType === "image-classification" &&
-      modelFramework === "onnx" &&
-      modelArchitecture === "resnet"
-    ) {
-      const imageZipFileName = path.basename(new URL(imageZipUrl).pathname);
-      const dataLabelFileName = path.basename(new URL(dataLabelUrl).pathname);
+    // if (
+    //   dataType === "unstructured" &&
+    //   taskType === "image-classification" &&
+    //   modelFramework === "onnx" &&
+    //   modelArchitecture === "resnet"
+    // ) {
+    //   const imageZipFileName = path.basename(new URL(imageZipUrl).pathname);
+    //   const dataLabelFileName = path.basename(new URL(dataLabelUrl).pathname);
 
-      await runCommand(`cp ${DATASETS_DIR}/${imageZipFileName} ${imageZipUrl}`);
-      await runCommand(`cp ${DATASETS_DIR}/${dataLabelFileName} ${dataLabelUrl}`);
+    //   await runCommand(`cp ${DATASETS_DIR}/${imageZipFileName} ${imageZipUrl}`);
+    //   await runCommand(`cp ${DATASETS_DIR}/${dataLabelFileName} ${dataLabelUrl}`);
 
-      payload.imageZipPath = `./datasets/${imageZipFileName}`;
-      payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
-    }
+    //   payload.imageZipPath = `./datasets/${imageZipFileName}`;
+    //   payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
+    // }
 
     console.log(`✅ [${tempId}] Inference preparation complete.`);
     return payload;
@@ -692,7 +692,7 @@ function getTargetColumnFromCSV(csvPath) {
 
 async function getContainerEnvConfig(options, inferenceData) {
   let targetColumn = "target";
-  if(options.modelFramework != "tensorflow"){
+  if(options.dataType != "unstructured"){
     targetColumn = await getTargetColumnFromCSV(inferenceData.tempReq);
   }
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
@@ -701,18 +701,14 @@ async function getContainerEnvConfig(options, inferenceData) {
     { name: "MLFLOW_TRACKING_URI", value: process.env.MLFLOW_URL },
     { name: "DATASET_PATH", value: inferenceData.datasetPath },
     { name: "EXPERIMENT_NAME", value: options.uuid },
-    { name: "TARGET_COLUMN", value: targetColumn ? targetColumn : 'target'}
   ];
   console.log(`📦 [getContainerEnvConfig] Base environment variables:`, baseEnv);
 
   if (
-    options.dataType === "unstructured" &&
-    options.taskType === "image-classification" &&
-    options.modelFramework === "onnx"
+    options.dataType != "unstructured"
   ) {
     baseEnv.push(
-      { name: "IMAGES_ZIP_PATH", value: inferenceData.imageZipPath },
-      { name: "DATA_LABEL_PATH", value: inferenceData.dataLabelPath }
+      { name: "TARGET_COLUMN", value: targetColumn ? targetColumn : 'target'}
     );
   }
 
