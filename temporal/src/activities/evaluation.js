@@ -359,14 +359,30 @@ export async function copyInferenceScripts(options) {
     await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
 
     // Copy dataset file
-    console.log(`[${tempId}] Copying dataset: ${datasetFileName}`);
-    await runCommand(`cp ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`);
+    let datasetPayloadPath;
+
+    if (datasetFileName.endsWith('.zip')) {
+      console.log(`[${tempId}] Unzipping dataset ZIP: ${datasetFileName}`);
+      await new Promise((resolve, reject) => {
+        fs.createReadStream(datasetFullPath)
+          .pipe(unzipper.Extract({ path: DATASETS_DIR }))
+          .on('close', resolve)
+          .on('error', reject);
+      });
+      datasetPayloadPath = './datasets/';
+    } else {
+      console.log(`[${tempId}] Copying dataset file: ${datasetFileName}`);
+      await runCommand(`cp "${datasetFullPath}" "${DATASETS_DIR}/${datasetFileName}"`);
+      datasetPayloadPath = `./datasets/${datasetFileName}`;
+    }
+
+
 
     const payload = {
       tempId,
       targetDir: TARGET_DIR,
-  weightsPath: weightFileName ? `./weights/${weightFileName}` : `./weights/`,
-      datasetPath: `./datasets/${datasetFileName}`,
+      weightsPath: weightFileName ? `./weights/${weightFileName}` : `./weights/`,
+      datasetPath: datasetPayloadPath,
       tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`,
     };
 
