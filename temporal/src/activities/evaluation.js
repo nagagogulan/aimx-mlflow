@@ -10,265 +10,12 @@ import fs from 'fs';
 import https from 'https';
 import yaml from 'js-yaml';
 import axios from "axios";
-import { promises as fsp } from 'fs';
 import { glob } from 'glob';
 
 
 const MLFLOW_API_BASE = "http://54.251.96.179:5000/api/2.0/mlflow";
 const projectRoot = "/app"; // ✅ Container-based 
 console.log('PROJECT ROOT:', projectRoot);
-
-export async function helloWorld(options) {
-  return "hello world";
-}
-
-
-// export async function copyInferenceScripts(options) {
-//   const tempId = nanoid();
-//   console.log(`📥 [copyInferenceScripts] Received options for ID: ${tempId}`);
-
-//   try {
-//     const {
-//       dataType,
-//       taskType,
-//       modelFramework,                                                                                                                                                                                                                                                                                                                                                                                                                                 
-//       modelArchitecture,
-//       modelWeightUrl,
-//       modelDatasetUrl,
-//       imageZipUrl,
-//       dataLabelUrl,
-//     } = options;
-
-//     if (!modelWeightUrl?.link && !modelWeightUrl?.path) {
-//       console.error("Missing 'modelWeightUrl.link' or 'modelWeightUrl.path' in input options");
-//       throw new Error("Missing required field: modelWeightUrl.link or modelWeightUrl.path");
-//     }
-
-//     const datasetEntry = modelDatasetUrl?.[0];
-//     if (!datasetEntry?.Value) {
-//       console.error("Missing 'modelDatasetUrl[0].Value' in input options");
-//       throw new Error("Missing required field: modelDatasetUrl[0].Value");
-//     }
-
-//     const INFERENCE_BASE_DIR = `${projectRoot}/scripts/${dataType}/${taskType}/${modelFramework}/${modelArchitecture}`;
-//     const INFERENCE_SCRIPT_PATH = `${INFERENCE_BASE_DIR}/src`;
-//     const REQUIREMENTS_FILE = `${INFERENCE_BASE_DIR}/requirements.txt`;
-//     const DOCKER_FILE_DIR = `${INFERENCE_BASE_DIR}/Dockerfile`;
-
-//     const TARGET_DIR = `${projectRoot}/temporal-runs/${tempId}`;
-//     const MODEL_WEIGHT_DIR = `${TARGET_DIR}/weights`;
-//     const DATASETS_DIR = `${TARGET_DIR}/datasets`;
-
-//     const modelFileName = modelWeightUrl.link
-//       ? path.basename(new URL(modelWeightUrl.link).pathname)
-//       : path.basename(modelWeightUrl.path);
-//     const datasetFileName = path.basename(datasetEntry.Value);
-
-//     const modelWeightFullPath = modelWeightUrl.path
-//       ? path.resolve(modelWeightUrl.path)
-//       : null;
-//     const datasetFullPath = path.resolve(datasetEntry.Value);
-
-//     console.log(`[${tempId}] Creating target directory: ${TARGET_DIR}`);
-//     await runCommand(`mkdir -p ${TARGET_DIR}`);
-
-//     console.log(`[${tempId}] Copying inference scripts from ${INFERENCE_SCRIPT_PATH}`);
-//     await runCommand(`cp -r ${INFERENCE_SCRIPT_PATH} ${TARGET_DIR}`);
-
-//     console.log(`[${tempId}] Copying Dockerfile`);
-//     await runCommand(`cp ${DOCKER_FILE_DIR} ${TARGET_DIR}`);
-
-//     console.log(`[${tempId}] Creating weights directory`);
-//     await runCommand(`mkdir -p ${MODEL_WEIGHT_DIR}`);
-
-//     if (modelWeightUrl.type === "GIT" && modelWeightUrl.link) {
-//       console.log(`[${tempId}] Downloading model weight from GitHub: ${modelWeightUrl.link}`);
-//       if (!modelWeightUrl.pat) {
-//         throw new Error("GitHub PAT is missing in 'modelWeightUrl.pat'.");
-//       }
-
-//       const headers = {
-//         Authorization: `token ${modelWeightUrl.pat}`,
-//         Accept: "application/vnd.github.v3.raw",
-//       };
-
-//       const response = await axios.get(modelWeightUrl.link, { headers, responseType: "stream" });
-//       const modelWeightFilePath = `${MODEL_WEIGHT_DIR}/${modelFileName}`;
-//       const writer = fs.createWriteStream(modelWeightFilePath);
-
-//       response.data.pipe(writer);
-
-//       await new Promise((resolve, reject) => {
-//         writer.on("finish", resolve);
-//         writer.on("error", reject);
-//       });
-
-//       console.log(`[${tempId}] Model weight downloaded to: ${modelWeightFilePath}`);
-
-//       // Copy the downloaded file to the temporal-runs directory
-//       console.log(`[${tempId}] Copying model weight to temporal-runs: ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-//       await runCommand(`cp ${modelWeightFilePath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-//     // } else if (modelWeightUrl.path) {
-//     //   console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
-//     //   await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-//     //   // If the file is a zip, extract and organize contents
-//     //   if (modelFileName.endsWith('.zip')) {
-//     //     const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
-//     //     console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
-//     //     await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
-//     //     await runCommand(`unzip -o ${MODEL_WEIGHT_DIR}/${modelFileName} -d ${TEMP_UNZIP_DIR}`);
-//     //     const files = fs.readdirSync(TEMP_UNZIP_DIR);
-//     //     // Move all .txt files as requirements.txt (if multiple, log and move all)
-//     //     const txtFiles = files.filter(f => f.endsWith('.txt'));
-//     //     if (txtFiles.length > 0) {
-//     //       for (const txtFile of txtFiles) {
-//     //         console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
-//     //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
-//     //       }
-//     //     } else {
-//     //       console.log(`[${tempId}] No .txt requirements file found in zip.`);
-//     //     }
-//     //     // Move all .py files to src/ as evaluation scripts
-//     //     const srcDir = `${TARGET_DIR}/src`;
-//     //     await runCommand(`mkdir -p ${srcDir}`);
-//     //     const pyFiles = files.filter(f => f.endsWith('.py'));
-//     //     if (pyFiles.length > 0) {
-//     //       for (const pyFile of pyFiles) {
-//     //         console.log(`[${tempId}] Moving evaluation script (${pyFile}) to src/ folder.`);
-//     //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${pyFile} ${srcDir}/${pyFile}`);
-//     //       }
-//     //     } else {
-//     //       console.log(`[${tempId}] No Python evaluation script found in zip.`);
-//     //     }
-//     //     // Move any other file as the model file to weights/
-//     //     const handled = new Set([...txtFiles, ...pyFiles]);
-//     //     const otherFiles = files.filter(f => !handled.has(f));
-//     //     if (otherFiles.length > 0) {
-//     //       for (const otherFile of otherFiles) {
-//     //         console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
-//     //         await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
-//     //       }
-//     //     } else {
-//     //       console.log(`[${tempId}] No model file found in zip (non .py/.txt).`);
-//     //     }
-//     //     // Clean up unzip dir
-//     //     console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
-//     //     await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
-//     //   }
-//     // } else {
-//     //   throw new Error("Invalid modelWeightUrl format.");
-//     // }
-//     } else if (modelWeightUrl.path) {
-//         console.log(`[${tempId}] Copying model weight: ${modelFileName}`);
-//         await runCommand(`cp ${modelWeightFullPath} ${MODEL_WEIGHT_DIR}/${modelFileName}`);
-
-//         if (modelFileName.endsWith('.zip')) {
-//           const TEMP_UNZIP_DIR = `${TARGET_DIR}/unzipped`;
-//           console.log(`[${tempId}] Detected zip file. Extracting to: ${TEMP_UNZIP_DIR}`);
-//           await runCommand(`mkdir -p ${TEMP_UNZIP_DIR}`);
-
-//           // Unzip using unzipper
-//           await new Promise((resolve, reject) => {
-//             fs.createReadStream(`${MODEL_WEIGHT_DIR}/${modelFileName}`)
-//               .pipe(unzipper.Extract({ path: TEMP_UNZIP_DIR }))
-//               .on('close', resolve)
-//               .on('error', reject);
-//           });
-
-//           console.log(`[${tempId}] Successfully unzipped using unzipper`);
-
-//           const files = await fsp.readdir(TEMP_UNZIP_DIR);
-//           const srcDir = `${TARGET_DIR}/src`;
-//           await runCommand(`mkdir -p ${srcDir}`);
-
-//           const evalFiles = files.filter(f => f.endsWith('.py') || f.endsWith('.ipynb'));
-//           for (const evalFile of evalFiles) {
-//             console.log(`[${tempId}] Moving evaluation script (${evalFile}) to src/ folder.`);
-//             await runCommand(`mv ${TEMP_UNZIP_DIR}/${evalFile} ${srcDir}/${evalFile}`);
-//           }
-
-//           const txtFiles = files.filter(f => f.endsWith('.txt'));
-//           for (const txtFile of txtFiles) {
-//             console.log(`[${tempId}] Moving requirements file (${txtFile}) to run root.`);
-//             await runCommand(`mv ${TEMP_UNZIP_DIR}/${txtFile} ${TARGET_DIR}/${txtFile}`);
-//           }
-
-//           const handled = new Set([...txtFiles, ...evalFiles]);
-//           const otherFiles = files.filter(f => !handled.has(f));
-//           for (const otherFile of otherFiles) {
-//             console.log(`[${tempId}] Moving model file (${otherFile}) to weights/ folder.`);
-//             await runCommand(`mv ${TEMP_UNZIP_DIR}/${otherFile} ${MODEL_WEIGHT_DIR}/${otherFile}`);
-//           }
-
-//           console.log(`[${tempId}] Cleaning up temporary unzip directory.`);
-//           await runCommand(`rm -rf ${TEMP_UNZIP_DIR}`);
-//         }
-//     } else {
-//       throw new Error("Invalid modelWeightUrl format.");
-//     }
-
-
-//     console.log(`[${tempId}] Creating datasets directory`);
-//     await runCommand(`mkdir -p ${DATASETS_DIR}`);
-
-//     console.log(`[${tempId}] Copying dataset: ${datasetFileName}`);
-//     await runCommand(`cp ${datasetFullPath} ${DATASETS_DIR}/${datasetFileName}`);
-
-//     console.log(`[${tempId}] Copying requirements.txt`);
-//     await runCommand(`cp ${REQUIREMENTS_FILE} ${TARGET_DIR}`);
-
-//     const payload = {
-//       tempId,
-//       targetDir: TARGET_DIR,
-//       weightsPath: `./weights/${modelFileName}`,
-//       datasetPath: `./datasets/${datasetFileName}`,
-//       tempReq: `./temporal-runs/${tempId}/datasets/${datasetFileName}`, //toget target column this pat is used
-//     };
-
-//     if (
-//       dataType === "unstructured" &&
-//       taskType === "image-classification" &&
-//       modelFramework === "onnx" &&
-//       modelArchitecture === "resnet"
-//     ) {
-//       const imageZipFileName = path.basename(new URL(imageZipUrl).pathname);
-//       const dataLabelFileName = path.basename(new URL(dataLabelUrl).pathname);
-
-//       console.log(`[${tempId}] Copying image zip: ${imageZipFileName}`);
-//       await runCommand(`cp ${DATASETS_DIR}/${imageZipFileName} ${imageZipUrl}`);
-
-//       console.log(`[${tempId}] Copying label file: ${dataLabelFileName}`);
-//       await runCommand(`cp ${DATASETS_DIR}/${dataLabelFileName} ${dataLabelUrl}`);
-
-//       payload.imageZipPath = `./datasets/${imageZipFileName}`;
-//       payload.dataLabelPath = `./datasets/${dataLabelFileName}`;
-      
-//     }
-
-//     console.log(`✅ [${tempId}] All files copied successfully.`);
-
-//     return payload
-//   } catch (err) {
-//     console.error(`❌ [${tempId}] Failed in copyInferenceScripts:`, err.message);
-//     throw err;
-//   }
-// }
-
-// export async function buildDockerImage(options) {
-//   console.log(`Building evaluation container from ${options.targetDir}`);
-
-//   // Step 1: Stop and remove existing container if running
-//   await runCommand("docker rm -f aimx-evaluation || true", options.targetDir);
-
-//   // Step 2: Build the Docker image
-//   await runCommand("docker build -t aimx-evaluation .", options.targetDir);
-
-//   await runCommand("docker tag aimx-evaluation:latest nagagogulan/aimx-evaluation:latest", options.targetDir);
-//   await runCommand("docker push nagagogulan/aimx-evaluation:latest", options.targetDir);
-
-//   return "Docker image built successfully!";
-// }
-
 
 export async function copyInferenceScripts(options) {
   const tempId = nanoid();
@@ -422,8 +169,6 @@ export async function copyInferenceScripts(options) {
   }
 }
 
-
-
 export async function buildDockerImage(options) {
   const dir = options.targetDir;
 
@@ -463,187 +208,7 @@ export async function buildDockerImage(options) {
   }
 }
 
-export async function runEvaluations(options) {
-  const device = "0";
-  const modelWeightsPath = process?.env?.WEIGHTS_PATH;
-  const mlFlowUrl = process?.env?.MLFLOW_URL;
-
-  console.log(`running evaluation container from ${options.targetDir}`);
-
-  // Run the container with dynamic environment variables
-  await runCommand(
-    `docker run -d -p 8888:8888 --gpus all --name aimx-evaluation \
-              -e DEVICE=${device} \
-              -e MODEL_WIGHTS_PATH=${modelWeightsPath} \
-              -e MLFLOW_TRACKING_URI=${mlFlowUrl} \
-              aimx-evaluation`,
-    options.targetDir
-  );
-  return "Docker container started successfully!";
-}
-
-// export async function runEvaluationsInCluster(options, inferenceData) {
-//   const kc = new k8s.KubeConfig();
-//   // kc.loadFromDefault(); // This will load from ~/.kube/config
-//   kc.loadFromFile(loadPatchedMinikubeConfig());
-  
-
-//   const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-//   const k8sBatchApi = kc.makeApiClient(k8s.BatchV1Api);
-
-//   // generate random string that returns 4 characters (only alphabets)
-//   const randomString = generateRandomString(4).toLocaleLowerCase();
-
-//   const namespace = process?.env?.NAMESPACE || "default";
-//   const jobName = `aimx-evaluation-${randomString}`; // Unique job name
-
-//   let containerData;
-
-//   if (
-//     options?.dataType === "structured" &&
-//     options?.taskType === "tabular-regression" &&
-//     options?.modelFramework === "scikit-learn" &&
-//     options?.modelArchitecture === "linear-regression"
-//   ) {
-//     containerData = [
-//       {
-//         name: "aimx-evaluation",
-//         image: "nagagogulan/aimx-evaluation:latest",
-//         imagePullPolicy: "Never", // Use local image
-//         env: [
-//           {
-//             name: "MODEL_WIGHTS_PATH",
-//             value: inferenceData.weightsPath,
-//           },
-//           {
-//             name: "MLFLOW_TRACKING_URI",
-//             value: process.env.MLFLOW_URL,
-//           },
-//           {
-//             name: "DATASET_PATH",
-//             value: inferenceData.datasetPath,
-//           },
-//           {
-//             name: "TARGET_COLUMN",
-//             value: options?.targetColumn || "target",
-//           },
-//           {
-//             name: "EXPERIMENT_NAME",
-//             value: options?.experimentName || "default_experiment",
-//           },
-//         ],
-//       },
-//     ];
-//   } else if (
-//     options?.dataType === "unstructured" &&
-//     options?.taskType === "image-classification" &&
-//     options?.modelFramework === "onnx" &&
-//     options?.modelArchitecture === "resnet"
-//   ) {
-//     containerData = [
-//       {
-//         name: "aimx-evaluation",
-//         image: "nagagogulan/aimx-evaluation:latest",
-//         imagePullPolicy: "Never", // Use local image
-//         env: [
-//           {
-//             name: "MODEL_WIGHTS_PATH",
-//             value: inferenceData.weightsPath,
-//           },
-//           {
-//             name: "MLFLOW_TRACKING_URI",
-//             value: process.env.MLFLOW_URL,
-//           },
-//           {
-//             name: "DATASET_PATH",
-//             value: inferenceData.datasetPath,
-//           },
-//           {
-//             name: "IMAGES_ZIP_PATH",
-//             value: inferenceData.imageZipPath,
-//           },
-//           {
-//             name: "DATA_LABEL_PATH",
-//             value: inferenceData.dataLabelPath,
-//           },
-//           {
-//             name: "EXPERIMENT_NAME",
-//             value: options?.experimentName || "default_experiment",
-//           },
-//         ],
-//       },
-//     ];
-//   } else if (
-//     options?.dataType === "structured" &&
-//     options?.taskType === "tabular-classification" &&
-//     options?.modelFramework === "xgboost" &&
-//     options?.modelArchitecture === "tree-based"
-//   ) {
-//     containerData = [
-//       {
-//         name: "aimx-evaluation",
-//         image: "nagagogulan/aimx-evaluation:latest",
-//         imagePullPolicy: "Never", // Use local image
-//         env: [
-//           {
-//             name: "MODEL_WIGHTS_PATH",
-//             value: inferenceData.weightsPath,
-//           },
-//           {
-//             name: "MLFLOW_TRACKING_URI",
-//             value: process.env.MLFLOW_URL,
-//           },
-//           {
-//             name: "DATASET_PATH",
-//             value: inferenceData.datasetPath,
-//           },
-//           {
-//             name: "TARGET_COLUMN",
-//             value: options?.targetColumn || "target",
-//           },
-//           {
-//             name: "EXPERIMENT_NAME",
-//             value: options?.experimentName || "default_experiment",
-//           },
-//         ],
-//       },
-//     ];
-//   }
-
-//   const jobManifest = {
-//     apiVersion: "batch/v1",
-//     kind: "Job",
-//     metadata: {
-//       name: jobName,
-//     },
-//     spec: {
-//       template: {
-//         metadata: {
-//           name: jobName,
-//         },
-//         spec: {
-//           containers: containerData,
-//           restartPolicy: "Never", // Very important for Jobs
-//         },
-//       },
-//       backoffLimit: 0, // No retries if it fails
-//     },
-//   };
-
-//   await k8sBatchApi.createNamespacedJob({
-//     namespace,
-//     body: jobManifest,
-//   });
-
-//   return {
-//     jobName: jobName,
-//     namespace: namespace,
-//   };
-// }
-
 export async function runEvaluationsInCluster(options, inferenceData) {
-
-  // await cleanMinikubeDockerResources();
   const randomString = generateRandomString(4).toLowerCase();
   const namespace = process?.env?.NAMESPACE || "default";
   if (!namespace || typeof namespace !== "string") {
@@ -704,23 +269,8 @@ export async function runEvaluationsInCluster(options, inferenceData) {
   }
 }
 
-function getTargetColumnFromCSV(csvPath) {
-  const absPath = path.resolve(csvPath);
-  console.log(`[getTargetColumnFromCSV] Reading CSV file at: ${absPath}`);
-  const firstLine = fs.readFileSync(absPath, 'utf8').split('\n')[0];
-  console.log(`[getTargetColumnFromCSV] First line (header): ${firstLine}`);
-  const columns = firstLine.split(',').map(col => col.trim());
-  console.log(`[getTargetColumnFromCSV] Columns found: ${columns.join(', ')}`);
-  const targetColumn = columns[columns.length - 1];
-  console.log(`[getTargetColumnFromCSV] Selected target column: ${targetColumn}`);
-  return targetColumn;
-}
-
 async function getContainerEnvConfig(options, inferenceData) {
-  let targetColumn = "target";
-  if(options.dataType != "unstructured"){
-    targetColumn = await getTargetColumnFromCSV(inferenceData.tempReq);
-  }
+
   console.log(`📦 [getContainerEnvConfig] Generating container environment configuration for options:`, options, inferenceData);
   const baseEnv = [
     { name: "MODEL_WEIGHTS_PATH", value: inferenceData.weightsPath },
@@ -728,16 +278,12 @@ async function getContainerEnvConfig(options, inferenceData) {
     { name: "DATASET_PATH", value: inferenceData.datasetPath },
     { name: "EXPERIMENT_NAME", value: options.uuid },
   ];
-  console.log(`📦 [getContainerEnvConfig] Base environment variables:`, baseEnv);
 
-  if (
-    options.dataType != "unstructured"
-  ) {
-    baseEnv.push(
-      { name: "TARGET_COLUMN", value: targetColumn ? targetColumn : 'target'}
-    );
+  if(!!options.target_column) {
+    baseEnv.push({ name: "TARGET_COLUMN", value: options.target_column });
   }
 
+  console.log("final base env:********************", baseEnv)
   return [{
     name: "aimx-evaluation",
     image: "nagagogulan/aimx-evaluation:latest",
@@ -817,36 +363,6 @@ const generateRandomString = (length = 4) => {
   ).join("");
 };
 
-// export async function sendDocketStatus(uuid, status) {
-//   const broker = "54.251.96.179:9092";
-//   const topic = "docket-status";
- 
-//   // Create topic if it doesn't exist
-//   allfunction.createTopicIfNotExists(broker, topic);
- 
-//   const kafka = new Kafka({ brokers: [broker] });
-//   const producer = kafka.producer();
-//   await producer.connect();
- 
-//   const message = {
-//     uuid,
-//     status
-//   };
- 
-//   await producer.send({
-//     topic,
-//     messages: [{
-//       key: uuid,
-//       value: JSON.stringify(message)
-//     }]
-//   });
- 
-//   console.log("Message sent to topic 'docket-status':", message);
- 
-//   await producer.disconnect();
-  
-// }
-
 export async function sendDocketMessage( uuid, status, metrics, publishtopic , payload = null ) {
   if(!uuid || !status || !metrics || !publishtopic) {
     return `Invalid input details: ${uuid} or ${status} or ${metrics} or ${publishtopic}`
@@ -901,15 +417,6 @@ function loadPatchedMinikubeConfig() {
     if (c.cluster['certificate-authority']) {
       c.cluster['certificate-authority'] = patchPath(c.cluster['certificate-authority']);
     }
- 
-    // ✅ Patch the Kubernetes API server address
-
-  //   if (c.cluster['server']) {
-  //     c.cluster['server'] = c.cluster['server'].replace(
-  //       'https://192.168.49.2',
-  //       'https://host.docker.internal'
-  //     );
-  //   }
   });
  
   config.users?.forEach(u => {
