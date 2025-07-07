@@ -1,23 +1,84 @@
 import { proxyActivities } from "@temporalio/workflow";
 
-const {
-  helloWorld,
-  copyInferenceScripts,
-  buildDockerImage,
-  runEvaluations,
-  runEvaluationsInCluster,
-  waitForJobCompletion,
-  fetchJobMetrics,
-  sendDocketMessage,
-} = proxyActivities({
-  startToCloseTimeout: "20 minute",
+// const {
+//   helloWorld,
+//   copyInferenceScripts,
+//   buildDockerImage,
+//   runEvaluations,
+//   runEvaluationsInCluster,
+//   waitForJobCompletion,
+//   fetchJobMetrics,
+//   sendDocketMessage,
+// } = proxyActivities({
+//   startToCloseTimeout: "20 minute",
+//   retry: {
+//     initialInterval: "60 second",
+//     maximumAttempts: 1,
+//     // maximumAttempts: 5,
+//     // backoffCoefficient: 2,
+//   },
+// });
+
+// 1️⃣ copyInferenceScripts - 3 attempts, short backoff
+export const copyInferenceScripts = proxyActivities({
+  startToCloseTimeout: "10 minutes",
   retry: {
-    initialInterval: "60 second",
-    maximumAttempts: 1,
-    // maximumAttempts: 5,
-    // backoffCoefficient: 2,
+    initialInterval: "30 seconds",
+    backoffCoefficient: 2,
+    maximumAttempts: 3,
   },
 });
+
+// 2️⃣ buildDockerImage - more robust, higher attempts
+export const buildDockerImage = proxyActivities({
+  startToCloseTimeout: "20 minutes",
+  retry: {
+    initialInterval: "60 seconds",
+    backoffCoefficient: 2,
+    maximumAttempts: 3,
+  },
+});
+
+// 3️⃣ runEvaluationsInCluster - similar policy
+export const runEvaluationsInCluster = proxyActivities({
+  startToCloseTimeout: "20 minutes",
+  retry: {
+    initialInterval: "45 seconds",
+    backoffCoefficient: 2,
+    maximumAttempts: 3,
+  },
+});
+
+// 4️⃣ waitForJobCompletion - very long-running
+export const waitForJobCompletion = proxyActivities({
+  startToCloseTimeout: "60 minutes",
+  retry: {
+    initialInterval: "2 minutes",
+    backoffCoefficient: 2,
+    maximumAttempts: 3,
+  },
+});
+
+// 5️⃣ fetchJobMetrics - shorter retries
+export const fetchJobMetrics = proxyActivities({
+  startToCloseTimeout: "10 minutes",
+  retry: {
+    initialInterval: "30 seconds",
+    backoffCoefficient: 2,
+    maximumAttempts: 3,
+  },
+});
+
+// 6️⃣ sendDocketMessage - usually reliable, low retry
+export const sendDocketMessage = proxyActivities({
+  startToCloseTimeout: "5 minutes",
+  retry: {
+    initialInterval: "30 seconds",
+    backoffCoefficient: 2,
+    maximumAttempts: 3,
+  },
+});
+
 
 export async function runEval(payload) {
   const inferenceData = await copyInferenceScripts(payload);
