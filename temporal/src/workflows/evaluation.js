@@ -56,7 +56,7 @@ export const { waitForJobCompletion } = proxyActivities({
   retry: {
     initialInterval: '2 minutes',
     backoffCoefficient: 2,
-    maximumAttempts: 3,
+    maximumAttempts: 1,
   },
 });
 
