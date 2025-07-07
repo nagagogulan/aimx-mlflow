@@ -318,8 +318,9 @@ export async function waitForJobCompletion(
     }
 
     if (job.status.failed && job.status.failed > 0) {
+      const jobDetails = JSON.stringify(job, null, 2);
       throw new Error(
-        `❌ Job ${jobName} failed with ${job.status.failed} failures.`
+        `❌ Job ${jobName} failed with ${job.status.failed} failures.\n\nJob details:\n${jobDetails}`
       );
     }
 
