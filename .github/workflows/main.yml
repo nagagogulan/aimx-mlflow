@@ -1,48 +1,48 @@
-name: Deploy Evaluation Worker to EC2 on Development Branch Push
+# name: Deploy Evaluation Worker to EC2 on Development Branch Push
 
-on:
-  push:
-    branches:
-      - development
+# on:
+#   push:
+#     branches:
+#       - development
 
-jobs:
-  deploy:
-    name: Build & Deploy to EC2
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     name: Build & Deploy to EC2
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
 
-      - name: Set up SSH Agent
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+#       - name: Set up SSH Agent
+#         uses: webfactory/ssh-agent@v0.8.0
+#         with:
+#           ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-      - name: Deploy to EC2 and Rebuild Evaluation Worker
-        run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-251-96-179.ap-southeast-1.compute.amazonaws.com << 'EOF'
-            set -e
+#       - name: Deploy to EC2 and Rebuild Evaluation Worker
+#         run: |
+#           ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-251-96-179.ap-southeast-1.compute.amazonaws.com << 'EOF'
+#             set -e
 
-            echo "🔁 Navigating to project directory..."
-            cd ~/aimx-ml/AIMx-ML/temporal
+#             echo "🔁 Navigating to project directory..."
+#             cd ~/aimx-ml/AIMx-ML/temporal
 
-            echo "🔄 Stopping old container if running..."
-            docker stop temporal-aimx_evaluation_worker-1 || true
+#             echo "🔄 Stopping old container if running..."
+#             docker stop temporal-aimx_evaluation_worker-1 || true
 
-            echo "🧹 Removing old container..."
-            docker rm temporal-aimx_evaluation_worker-1 || true
+#             echo "🧹 Removing old container..."
+#             docker rm temporal-aimx_evaluation_worker-1 || true
 
-            echo "🧼 Removing old image..."
-            docker rmi temporal-aimx_evaluation_worker:latest || true
+#             echo "🧼 Removing old image..."
+#             docker rmi temporal-aimx_evaluation_worker:latest || true
 
-            echo "📥 Pulling latest Git changes..."
-            git reset --hard
-            git pull origin development
+#             echo "📥 Pulling latest Git changes..."
+#             git reset --hard
+#             git pull origin development
 
-            echo "🔨 Rebuilding and starting new container..."
-            docker compose -f compose.yaml up -d --build
+#             echo "🔨 Rebuilding and starting new container..."
+#             docker compose -f compose.yaml up -d --build
 
-            echo "✅ Deployment complete. Current containers:"
-            docker ps
-          EOF
+#             echo "✅ Deployment complete. Current containers:"
+#             docker ps
+#           EOF
