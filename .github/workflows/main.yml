@@ -1,48 +1,45 @@
-# name: Deploy Evaluation Worker to EC2 on Development Branch Push
+name: Deploy Evaluation Worker to On-Prem K8s on Development Branch Push
 
-# on:
-#   push:
-#     branches:
-#       - development
+on:
+  push:
+    branches:
+      - cicd
 
-# jobs:
-#   deploy:
-#     name: Build & Deploy to EC2
-#     runs-on: ubuntu-latest
+jobs:
+  deploy:
+    name: Build & Deploy to On-Prem Kubernetes
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-#       - name: Set up SSH Agent
-#         uses: webfactory/ssh-agent@v0.8.0
-#         with:
-#           ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-#       - name: Deploy to EC2 and Rebuild Evaluation Worker
-#         run: |
-#           ssh -o StrictHostKeyChecking=no ubuntu@ec2-54-251-96-179.ap-southeast-1.compute.amazonaws.com << 'EOF'
-#             set -e
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-#             echo "🔁 Navigating to project directory..."
-#             cd ~/aimx-ml/AIMx-ML/temporal
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest ./temporal
+          docker push ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest
 
-#             echo "🔄 Stopping old container if running..."
-#             docker stop temporal-aimx_evaluation_worker-1 || true
+      - name: Set up Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
 
-#             echo "🧹 Removing old container..."
-#             docker rm temporal-aimx_evaluation_worker-1 || true
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl config get-contexts
+          kubectl get nodes
+          
+          echo "Applying Kubernetes manifests..."
+          kubectl apply -f k8s/evaluation-worker-deployment.yaml
+          kubectl rollout status deployment/evaluation-worker -n aimx
 
-#             echo "🧼 Removing old image..."
-#             docker rmi temporal-aimx_evaluation_worker:latest || true
-
-#             echo "📥 Pulling latest Git changes..."
-#             git reset --hard
-#             git pull origin development
-
-#             echo "🔨 Rebuilding and starting new container..."
-#             docker compose -f compose.yaml up -d --build
-
-#             echo "✅ Deployment complete. Current containers:"
-#             docker ps
-#           EOF
