@@ -3,7 +3,7 @@ name: Deploy Evaluation Worker to On-Prem K8s on Development Branch Push
 on:
   push:
     branches:
-      - cicd
+      - main
 
 jobs:
   deploy:
