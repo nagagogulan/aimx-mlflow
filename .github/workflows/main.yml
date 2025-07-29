@@ -39,7 +39,7 @@ jobs:
         run: |
           kubectl config get-contexts
           kubectl get nodes
-          
+
           echo "Applying Kubernetes manifests to internal-aimx namespace..."
           kubectl apply -n internal-aimx -f k8s/evaluation-worker-deployment.yaml
           kubectl rollout status deployment/evaluation-worker -n internal-aimx
