@@ -86,20 +86,27 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: self-hosted   # 🧠 Make sure this runs on your internal/self-hosted runner
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Install sshpass
         run: |
-          sudo apt-get update && sudo apt-get install -y sshpass
+          sudo apt-get update
+          sudo apt-get install -y sshpass
 
-      - name: Run kubectl via SSH using sshpass
+      - name: SSH and run kubectl get nodes
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}  # 🔐 Add this in GitHub secrets
         run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no aimxadmin@192.168.100.20 '
+          echo "Connecting to 192.168.100.20 and running kubectl..."
+          sshpass -e ssh -o StrictHostKeyChecking=no aimxadmin@192.168.100.20 << 'EOF'
+            echo "🟢 Logged into AIMx server: $(hostname)"
             export KUBECONFIG=/home/aimxadmin/aimx-kubeconfig
+            echo "📦 Running kubectl get nodes..."
             kubectl get nodes
-            # kubectl apply -f /home/aimxadmin/deployment.yaml
-          '
+          EOF
+
 
