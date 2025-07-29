@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
@@ -29,16 +29,22 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest ./temporal
           docker push ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest
 
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.30.1'
+
       - name: Set up Kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > ~/.kube/config
+          echo "${{ secrets.AIMX_KUBECONFIG }}" | base64 --decode > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: Deploy to Kubernetes (Namespace:internal-aimx)
+      - name: Verify Cluster Access
+        run: kubectl get nodes
+
+      - name: Deploy Evaluation Worker
         run: |
-          kubectl config get-contexts
-          kubectl get nodes
-          echo "Applying Kubernetes manifests to internal-aimx namespace..."
+          echo "Deploying evaluation-worker to namespace: internal-aimx"
           kubectl apply -n internal-aimx -f k8s/evaluation-worker-deployment.yaml
           kubectl rollout status deployment/evaluation-worker -n internal-aimx
