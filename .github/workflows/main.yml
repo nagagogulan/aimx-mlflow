@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # 👈 enables manual run
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -35,11 +35,10 @@ jobs:
           echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: Deploy to Kubernetes (Namespace: internal-aimx)
+      - name: Deploy to Kubernetes (Namespace:internal-aimx)
         run: |
           kubectl config get-contexts
           kubectl get nodes
-
           echo "Applying Kubernetes manifests to internal-aimx namespace..."
           kubectl apply -n internal-aimx -f k8s/evaluation-worker-deployment.yaml
           kubectl rollout status deployment/evaluation-worker -n internal-aimx
