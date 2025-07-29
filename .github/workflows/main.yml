@@ -77,7 +77,7 @@
 
 
 
-name: Deploy to AIMx K8s
+name: Deploy to AIMx via Password SSH (Self-hosted)
 
 on:
   push:
@@ -86,15 +86,20 @@ on:
 
 jobs:
   deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up kubeconfig
+      - name: Install sshpass
         run: |
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > kubeconfig
-          export KUBECONFIG=$PWD/kubeconfig
-          kubectl get nodes
+          sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Run kubectl via SSH using sshpass
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no aimxadmin@192.168.100.20 '
+            export KUBECONFIG=/home/aimxadmin/aimx-kubeconfig
+            kubectl get nodes
+            # kubectl apply -f /home/aimxadmin/deployment.yaml
+          '
+
