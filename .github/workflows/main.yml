@@ -153,7 +153,7 @@ jobs:
         run: |
           export KUBECONFIG=$PWD/kubeconfig.yaml
           echo "📦 Applying manifests..."
-          kubectl apply -f base/internal/eval-deployment.yaml  # 🔁 Replace with correct path
+          kubectl apply -f temporal/k8s/evaluation-worker-deployment.yaml  # 🔁 Replace with correct path
 
       - name: Wait for deployment rollout
         run: |
