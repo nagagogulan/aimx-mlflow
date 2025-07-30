@@ -122,7 +122,7 @@ name: Deploy Evaluation Worker to On-Prem K8s on Development Branch Push
 on:
   push:
     branches:
-      - main
+      - main  # same as EC2 one
   workflow_dispatch:
 
 jobs:
@@ -146,24 +146,29 @@ jobs:
           echo "✅ Current context:"
           kubectl config current-context
 
-          echo "✅ Available contexts:"
-          kubectl config get-contexts
-
           echo "✅ Nodes in the cluster:"
           kubectl get nodes
 
       - name: Apply Kubernetes manifests
         run: |
           export KUBECONFIG=$PWD/kubeconfig.yaml
-          kubectl apply -f k8s/deployment.yaml
+          echo "📦 Applying manifests..."
+          kubectl apply -f base/internal/eval-deployment.yaml  # 🔁 Replace with correct path
 
       - name: Wait for deployment rollout
         run: |
           export KUBECONFIG=$PWD/kubeconfig.yaml
+          echo "⏳ Waiting for deployment to finish..."
           kubectl rollout status deployment/evaluation-worker -n internal-aimx
 
-      - name: Show pods
+      - name: Show current pods
         run: |
           export KUBECONFIG=$PWD/kubeconfig.yaml
           kubectl get pods -n internal-aimx -o wide
+
+      - name: Show logs (optional)
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+          POD=$(kubectl get pods -n internal-aimx -l app=evaluation-worker -o jsonpath="{.items[0].metadata.name}")
+          kubectl logs $POD -n internal-aimx
 
