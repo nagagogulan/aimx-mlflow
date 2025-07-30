@@ -1,0 +1,13 @@
+# shared-data-pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: shared-data-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /mnt/shared-data  # Make sure this path exists on your node

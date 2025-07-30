@@ -1,0 +1,109 @@
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: evaluation-worker
+#   namespace: internal-aimx
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: evaluation-worker
+#   template:
+#     metadata:
+#       labels:
+#         app: evaluation-worker
+#     spec:
+#       imagePullSecrets:
+#         - name: dockerhub-secret
+#       containers:
+#         - name: evaluation-worker
+#           image: nagagogulan/evaluation-worker:latest
+#           imagePullPolicy: Always
+#           ports:
+#             - containerPort: 3800
+#           env:
+#             - name: NODE_ENV
+#               value: "local"
+#             - name: TEMPORAL_ADDRESS
+#               value: "54.251.96.179:7233"
+#             - name: TEMPORAL_PORT
+#               value: "7233"
+#             - name: EVAL_BASE_DIR
+#               value: "/usr/src/app"
+#             - name: MLFLOW_URL
+#               value: "http://54.251.96.179:5000/"
+#             - name: DOCKER_HUB_USERNAME
+#               valueFrom:
+#                 secretKeyRef:
+#                   name: dockerhub-secret
+#                   key: .dockerconfigjson
+#             - name: DOCKER_HUB_PASSWORD
+#               value: "dummy"  # Optional: Remove if not used directly
+#             - name: KAFKA_ADDRESS
+#               value: "54.251.96.179:9092"
+#             - name: NAMESPACE
+#               value: "default"
+#           volumeMounts:
+#             - name: shared-data
+#               mountPath: /app/shared
+#       volumes:
+#         - name: shared-data
+#           persistentVolumeClaim:
+#             claimName: shared-data-pvc
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evaluation-worker
+  namespace: internal-aimx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evaluation-worker
+  template:
+    metadata:
+      labels:
+        app: evaluation-worker
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-secret
+      containers:
+        - name: evaluation-worker
+          image: nagagogulan/evaluation-worker:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3800
+          env:
+            - name: NODE_ENV
+              value: "local"
+            - name: TEMPORAL_ADDRESS
+              value: "54.251.96.179:7233"
+            - name: TEMPORAL_PORT
+              value: "7233"
+            - name: EVAL_BASE_DIR
+              value: "/usr/src/app"
+            - name: MLFLOW_URL
+              value: "http://54.251.96.179:5000/"
+            - name: DOCKER_HUB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dockerhub-secret
+                  key: username
+            - name: DOCKER_HUB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dockerhub-secret
+                  key: password
+            - name: KAFKA_ADDRESS
+              value: "54.251.96.179:9092"
+            - name: NAMESPACE
+              value: "default"
+          volumeMounts:
+            - mountPath: /app/shared
+              name: shared-data
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: shared-data-pvc
