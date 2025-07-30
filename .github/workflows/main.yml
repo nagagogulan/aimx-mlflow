@@ -1,3 +1,122 @@
+# name: Deploy Evaluation Worker to On-Prem K8s on Development Branch Push
+
+# on:
+#   push:
+#     branches:
+#       - main
+#   workflow_dispatch:
+
+# jobs:
+#   deploy:
+#     name: Build & Deploy to On-Prem Kubernetes
+#     runs-on: self-hosted
+
+# # #     steps:
+# # #       - name: Checkout Code
+# # #         uses: actions/checkout@v3
+
+# # #       - name: Set up Docker Buildx
+# # #         uses: docker/setup-buildx-action@v3
+
+# # #       - name: Login to DockerHub
+# # #         uses: docker/login-action@v3
+# # #         with:
+# # #           username: ${{ secrets.DOCKER_USERNAME }}
+# # #           password: ${{ secrets.DOCKER_PASSWORD }}
+
+# # #       - name: Build and Push Docker Image
+# # #         run: |
+# # #           docker build -t ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest ./temporal
+# # #           docker push ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest
+
+# # #       - name: Install kubectl
+# # #         uses: azure/setup-kubectl@v3
+# # #         with:
+# # #           version: 'v1.30.1'
+
+# # #       - name: Set up Kubeconfig
+# # #         run: |
+# # #           mkdir -p ~/.kube
+# # #           echo "${{ secrets.AIMX_KUBECONFIG }}" | base64 --decode > ~/.kube/config
+# # #           chmod 600 ~/.kube/config
+
+# # #       - name: Verify Cluster Access
+# # #         run: kubectl get nodes
+
+# # #       - name: Deploy Evaluation Worker
+# # #         run: |
+# # #           echo "Deploying evaluation-worker to namespace: internal-aimx"
+# # #           kubectl apply -n internal-aimx -f k8s/evaluation-worker-deployment.yaml
+# # #           kubectl rollout status deployment/evaluation-worker -n internal-aimx
+
+
+
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Decode kubeconfig
+#         run: |
+#           echo "$KUBECONFIG_B64" | base64 --decode > kubeconfig.yaml
+#         env:
+#           KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+
+#       - name: Check cluster connection
+#         run: |
+#           export KUBECONFIG=$PWD/kubeconfig.yaml
+#           echo "✅ Current context:"
+#           kubectl config current-context
+
+#           echo "✅ Available contexts:"
+#           kubectl config get-contexts
+
+#           echo "✅ Nodes in the cluster:"
+#           kubectl get nodes
+
+
+
+
+# # name: Deploy to AIMx via Password SSH (Self-hosted)
+
+# # on:
+# #   push:
+# #     branches:
+# #       - main
+
+# # jobs:
+# #   deploy:
+# #     runs-on: self-hosted   # 🧠 Make sure this runs on your internal/self-hosted runner
+
+# #     steps:
+# #       - name: Checkout repository
+# #         uses: actions/checkout@v3
+
+# #       - name: Install sshpass
+# #         run: |
+# #           sudo apt-get update
+# #           sudo apt-get install -y sshpass
+
+# #       - name: SSH and run kubectl get nodes
+# #         env:
+# #           SSHPASS: ${{ secrets.SSH_PASSWORD }}  # 🔐 Add this in GitHub secrets
+# #         run: |
+# #           echo "Connecting to 192.168.100.20 and running kubectl..."
+# #           sshpass -e ssh -o StrictHostKeyChecking=no aimxadmin@192.168.100.20 << 'EOF'
+# #             echo "🟢 Logged into AIMx server: $(hostname)"
+# #             export KUBECONFIG=/home/aimxadmin/aimx-kubeconfig
+# #             echo "📦 Running kubectl get nodes..."
+# #             kubectl get nodes
+# #           EOF
+
+
+
+
+
+
+
+
+
 name: Deploy Evaluation Worker to On-Prem K8s on Development Branch Push
 
 on:
@@ -10,47 +129,6 @@ jobs:
   deploy:
     name: Build & Deploy to On-Prem Kubernetes
     runs-on: self-hosted
-
-# #     steps:
-# #       - name: Checkout Code
-# #         uses: actions/checkout@v3
-
-# #       - name: Set up Docker Buildx
-# #         uses: docker/setup-buildx-action@v3
-
-# #       - name: Login to DockerHub
-# #         uses: docker/login-action@v3
-# #         with:
-# #           username: ${{ secrets.DOCKER_USERNAME }}
-# #           password: ${{ secrets.DOCKER_PASSWORD }}
-
-# #       - name: Build and Push Docker Image
-# #         run: |
-# #           docker build -t ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest ./temporal
-# #           docker push ${{ secrets.DOCKER_USERNAME }}/evaluation-worker:latest
-
-# #       - name: Install kubectl
-# #         uses: azure/setup-kubectl@v3
-# #         with:
-# #           version: 'v1.30.1'
-
-# #       - name: Set up Kubeconfig
-# #         run: |
-# #           mkdir -p ~/.kube
-# #           echo "${{ secrets.AIMX_KUBECONFIG }}" | base64 --decode > ~/.kube/config
-# #           chmod 600 ~/.kube/config
-
-# #       - name: Verify Cluster Access
-# #         run: kubectl get nodes
-
-# #       - name: Deploy Evaluation Worker
-# #         run: |
-# #           echo "Deploying evaluation-worker to namespace: internal-aimx"
-# #           kubectl apply -n internal-aimx -f k8s/evaluation-worker-deployment.yaml
-# #           kubectl rollout status deployment/evaluation-worker -n internal-aimx
-
-
-
 
     steps:
       - name: Checkout code
@@ -74,40 +152,18 @@ jobs:
           echo "✅ Nodes in the cluster:"
           kubectl get nodes
 
+      - name: Apply Kubernetes manifests
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+          kubectl apply -f k8s/deployment.yaml
 
+      - name: Wait for deployment rollout
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+          kubectl rollout status deployment/evaluation-worker -n internal-aimx
 
-
-# name: Deploy to AIMx via Password SSH (Self-hosted)
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# jobs:
-#   deploy:
-#     runs-on: self-hosted   # 🧠 Make sure this runs on your internal/self-hosted runner
-
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
-
-#       - name: Install sshpass
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y sshpass
-
-#       - name: SSH and run kubectl get nodes
-#         env:
-#           SSHPASS: ${{ secrets.SSH_PASSWORD }}  # 🔐 Add this in GitHub secrets
-#         run: |
-#           echo "Connecting to 192.168.100.20 and running kubectl..."
-#           sshpass -e ssh -o StrictHostKeyChecking=no aimxadmin@192.168.100.20 << 'EOF'
-#             echo "🟢 Logged into AIMx server: $(hostname)"
-#             export KUBECONFIG=/home/aimxadmin/aimx-kubeconfig
-#             echo "📦 Running kubectl get nodes..."
-#             kubectl get nodes
-#           EOF
-
-
+      - name: Show pods
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig.yaml
+          kubectl get pods -n internal-aimx -o wide
 
